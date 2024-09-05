@@ -3,11 +3,16 @@ project('learn-opengl', 'c',
   default_options : ['warning_level=3'])
 
 
-glfw_proj = subproject('glfw', default_options: ['default_library=static'])
-glfw_dep = glfw_proj.get_variable('glfw_dep')
+# system dependencies
+glfw_dep = dependency('glfw3')
+cblas_dep = dependency('cblas')
+cglm_dep = dependency('cglm')
+assimp_dep = dependency('assimp')
 
 deps = [
-  glfw_dep
+  glfw_dep,
+  cblas_dep,
+  assimp_dep
 ]
 
 src = [
