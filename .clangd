@@ -4,3 +4,4 @@ Diagnostics:
 
 CompileFlags:
   Add: [-std=c11, -Wall, -Wextra, -Wshadow, -Iinclude]
+  CompilationDatabase: builddir

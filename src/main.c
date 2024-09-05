@@ -1,5 +1,5 @@
 #include "glad/gl.h"
-#include <GLFW/glfw3.h>
+#include "GLFW/glfw3.h"
 #include <stdio.h>
 
 #define H 480
@@ -13,6 +13,15 @@ typedef enum { UNKNOWN, GLFW_CREATE_WINDOW_ERROR, GLAD_INIT_ERROR } ErrorCode;
 
 /// prints the open gl version
 void printGlVer(int v) { printf("Loaded OpenGL %d.%d\n", GLMA(v), GLMI(v)); }
+
+int runApp(GLFWwindow *w) {
+  while (!glfwWindowShouldClose(w)) {
+    glClear(GL_COLOR_BUFFER_BIT); // clear buffer
+    glfwSwapBuffers(w);           // swap
+    glfwPollEvents();             // poll and process events
+  }
+  return 0;
+}
 
 int main(void) {
   /// window
@@ -29,20 +38,13 @@ int main(void) {
   if (v == 0) goto clean;             // if unsuccsesfull goto cleanup
   printGlVer(v);                      // print version
 
-  // === Init end ===
+  // === Application loop ==
+  runApp(w);
 
-  // === Application loop begin ==
-  while (!glfwWindowShouldClose(w)) {
-    glClear(GL_COLOR_BUFFER_BIT); // clear buffer
-    glfwSwapBuffers(w);           // swap
-    glfwPollEvents();             // poll and process events
-  }
-  // === Application loop end (duh) ==
-
-  int code = 0;
+  // === cleanup loop ==
 clean:
   glfwTerminate();
-  if (!w) code = -1; // glfw could not init window
-  if (!v) code = -1; // glad could not init opengl
-  return code;
+  if (!w) return -1; // glfw could not init window
+  if (!v) return -1; // glad could not init opengl
+  return 0;
 }
