@@ -1,6 +1,9 @@
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
 #include <stdio.h>
+#include <stdbool.h>
+
+#include "app/core.h"
 
 #define H 480
 #define W 640
@@ -14,14 +17,13 @@ typedef enum { UNKNOWN, GLFW_CREATE_WINDOW_ERROR, GLAD_INIT_ERROR } ErrorCode;
 /// prints the open gl version
 void printGlVer(int v) { printf("Loaded OpenGL %d.%d\n", GLMA(v), GLMI(v)); }
 
-int runApp(GLFWwindow *w) {
-  while (!glfwWindowShouldClose(w)) {
-    glClear(GL_COLOR_BUFFER_BIT); // clear buffer
-    glfwSwapBuffers(w);           // swap
-    glfwPollEvents();             // poll and process events
-  }
-  return 0;
+// === callbacks ===
+
+void onResizeScreen(GLFWwindow *window, int width, int height) {
+  glViewport(0, 0, width, height);
 }
+
+// === application code ===
 
 int main(void) {
   /// window
@@ -31,17 +33,24 @@ int main(void) {
 
   // === Init begin ===
   if (!glfwInit()) return -1;
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   w = glfwCreateWindow(W, H, WT, NULL, NULL); // create window and context
   if (!w) goto clean;                         // if unsuccessful goto cleanup
   glfwMakeContextCurrent(w);          // set the context to current context
   v = gladLoadGL(glfwGetProcAddress); // setup opengl function pointers
   if (v == 0) goto clean;             // if unsuccsesfull goto cleanup
+  glViewport(0, 0, W, H);             // set the viewport
   printGlVer(v);                      // print version
 
-  // === Application loop ==
-  runApp(w);
+  glfwSetFramebufferSizeCallback(
+      w, onResizeScreen); // register callback to run when screen resizes
 
-  // === cleanup loop ==
+  // === Application loop ==
+  run_app(w);
+
+  // === Cleanup ===
 clean:
   glfwTerminate();
   if (!w) return -1; // glfw could not init window
