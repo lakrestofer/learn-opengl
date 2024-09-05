@@ -1,6 +1,7 @@
 #ifndef APP_CORE_HEADER
 #define APP_CORE_HEADER
 
+#include "glad/gl.h"
 #include <GLFW/glfw3.h>
 #include <stdbool.h>
 

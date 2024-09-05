@@ -17,7 +17,8 @@ deps = [
 
 src = [
   './src/main.c',
-  './src/gl.c'
+  './src/gl.c',
+  './src/core.c'
 ]
 incdir = include_directories('include')
 exe = executable(
