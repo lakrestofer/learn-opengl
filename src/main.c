@@ -2,51 +2,47 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 
-#define HEIGHT 480
-#define WIDTH 640
-#define WINDOW_TITLE "Hello World"
+#define H 480
+#define W 640
+#define WT "Hello World"
 
-int main(void)
-{
-    GLFWwindow* window;
-    int version;
+#define GLMA(v) GLAD_VERSION_MAJOR(v)
+#define GLMI(v) GLAD_VERSION_MINOR(v)
 
-    /* Initialize the library */
-    if (!glfwInit())
-        return -1;
-    printf("got here");
+typedef enum { UNKNOWN, GLFW_CREATE_WINDOW_ERROR, GLAD_INIT_ERROR } ErrorCode;
 
-    /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(WIDTH, HEIGHT, WINDOW_TITLE, NULL, NULL);
-    if (!window)
-    {
-        glfwTerminate();
-        return -1;
-    }
-    /* Make the window's context current */
-    glfwMakeContextCurrent(window);
-    version = gladLoadGL(glfwGetProcAddress);
-    if (version == 0) {
-        printf("Failed to initialize OpenGL context\n");
-        return -1;
-    }
-    // Successfully loaded OpenGL
-    printf("Loaded OpenGL %d.%d\n", GLAD_VERSION_MAJOR(version), GLAD_VERSION_MINOR(version));
+/// prints the open gl version
+void printGlVer(int v) { printf("Loaded OpenGL %d.%d\n", GLMA(v), GLMI(v)); }
 
+int main(void) {
+  /// window
+  GLFWwindow *w = NULL;
+  /// version
+  int v = 0;
 
-    /* Loop until the user closes the window */
-    while (!glfwWindowShouldClose(window))
-    {
-        /* Render here */
-        glClear(GL_COLOR_BUFFER_BIT);
+  // === Init begin ===
+  if (!glfwInit()) return -1;
+  w = glfwCreateWindow(W, H, WT, NULL, NULL); // create window and context
+  if (!w) goto clean;                         // if unsuccessful goto cleanup
+  glfwMakeContextCurrent(w);          // set the context to current context
+  v = gladLoadGL(glfwGetProcAddress); // setup opengl function pointers
+  if (v == 0) goto clean;             // if unsuccsesfull goto cleanup
+  printGlVer(v);                      // print version
 
-        /* Swap front and back buffers */
-        glfwSwapBuffers(window);
+  // === Init end ===
 
-        /* Poll for and process events */
-        glfwPollEvents();
-    }
+  // === Application loop begin ==
+  while (!glfwWindowShouldClose(w)) {
+    glClear(GL_COLOR_BUFFER_BIT); // clear buffer
+    glfwSwapBuffers(w);           // swap
+    glfwPollEvents();             // poll and process events
+  }
+  // === Application loop end (duh) ==
 
-    glfwTerminate();
-    return 0;
+  int code = 0;
+clean:
+  glfwTerminate();
+  if (!w) code = -1; // glfw could not init window
+  if (!v) code = -1; // glad could not init opengl
+  return code;
 }
