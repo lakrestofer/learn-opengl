@@ -2,6 +2,7 @@
 #define APP_CORE_HEADER
 
 #include "glad/gl.h"
+#include "shaders/shader.h"
 #include <GLFW/glfw3.h>
 #include <stdbool.h>
 
@@ -12,7 +13,6 @@ typedef struct {
   GLsizeiptr iSize;
 } Vertices;
 
-typedef const char* ShaderSrc;
 
 /// start the application loop
 int runApp(GLFWwindow*, Vertices, ShaderSrc, ShaderSrc);

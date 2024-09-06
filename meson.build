@@ -22,7 +22,8 @@ deps = [
 src = [
   './src/main.c',
   './src/gl.c',
-  './src/core.c'
+  './src/core.c',
+  './src/shader.c'
 ]
 incdir = include_directories('include')
 exe = executable(
