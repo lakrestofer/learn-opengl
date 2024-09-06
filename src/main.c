@@ -102,11 +102,47 @@ int main(void) {
   glViewport(0, 0, W, H);             // set the viewport
   printGlVer(v);                      // print version
 
+  // === register callbacks ==
   glfwSetFramebufferSizeCallback(w, onResizeScreen); // register callback to run
                                                      // when screen resizes
+  // === compile and link shaders ==
+  GLuint shaders[] = {
+      initShader(GL_VERTEX_SHADER, VERTEX_SHADER_SRC),
+      initShader(GL_FRAGMENT_SHADER, FRAGMENT_SHADER_SRC),
+  };
+  if (!shaderIsValid(shaders[0]) || !shaderIsValid(shaders[1])) goto clean;
+  GLuint shader = linkShaders(shaders, 2);
+  if (!shaderProgramIsValid(shader)) goto clean;
+  for (int i = 0; i < 2; i++) glDeleteShader(shaders[i]);
+
+  // === setup gl objects ===
+  GLuint VAO; // vertex array object
+  GLuint VBO; // vertex buffer object
+  GLuint EBO; // element buffer object
+
+  // generate gl objects
+  glGenVertexArrays(1, &VAO);
+  glGenBuffers(1, &VBO);
+  glGenBuffers(1, &EBO);
+
+  /// setup how to interpret the buffer data
+  glBindVertexArray(VAO);
+  // copy vertex data from ram to vram
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(
+      GL_ARRAY_BUFFER, vertices.size, vertices.vertices, GL_STATIC_DRAW
+  );
+  // copy index data from ram to vram
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(
+      GL_ELEMENT_ARRAY_BUFFER, vertices.iSize, vertices.indices, GL_STATIC_DRAW
+  );
+  // set vertex attribute pointers
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
 
   // === Application loop ==
-  runApp(w, vertices, VERTEX_SHADER_SRC, FRAGMENT_SHADER_SRC);
+  runApp(w, VAO, shader);
 
   // === Cleanup ===
 clean:

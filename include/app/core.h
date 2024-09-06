@@ -15,6 +15,6 @@ typedef struct {
 
 
 /// start the application loop
-int runApp(GLFWwindow*, Vertices, ShaderSrc, ShaderSrc);
+int runApp(GLFWwindow*, GLuint VAO, Shader);
 
 #endif
