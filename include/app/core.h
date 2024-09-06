@@ -8,9 +8,7 @@
 
 typedef struct {
   const float* vertices;
-  const unsigned int* indices;
   GLsizeiptr size;
-  GLsizeiptr iSize;
 } Vertices;
 
 

@@ -28,51 +28,30 @@ void onResizeScreen(GLFWwindow* _, int width, int height) {
 // === application code ===
 
 // clang-format off
-float vertice2s[] = {
+float VERTICES[] = {
     // positions         // colors
      0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
     -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
      0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top 
 }; 
-
-float VERTICES[] = {
-    0.5f,
-    0.5f,
-    0.0f, // top right
-    0.5f,
-    -0.5f,
-    0.0f, // bottom right
-    -0.5f,
-    -0.5f,
-    0.0f, // bottom left
-    -0.5f,
-    0.5f,
-    0.0f // top left
-};
-unsigned int INDICES[] = {
-    // note that we start from 0!
-    0,
-    1,
-    3,
-    1,
-    2,
-    3
-};
-
-// clang-format off
 // does no transformation on the vertices
 const char *VERTEX_SHADER_SRC = GLSL(
-    layout(location = 0) in vec3 aPos;
-    void main() {
+  layout (location = 0) in vec3 aPos;
+  layout (location = 1) in vec3 aColor;
+  out vec3 ourColor;
+  void main()
+  {
       gl_Position = vec4(aPos, 1.0);
-    }
+      ourColor = aColor;
+  }
 );
 // colors each pixel within the triangle red
 const char *FRAGMENT_SHADER_SRC = GLSL(
-  out vec4 FragColor;
-  uniform vec4 ourColor;
-  void main() {
-    FragColor = ourColor;
+  out vec4 FragColor;  
+  in vec3 ourColor;  
+  void main()
+  {
+      FragColor = vec4(ourColor, 1.0);
   }
 );
 // clang-format on
@@ -84,9 +63,7 @@ int main(void) {
   int v = 0;
   Vertices vertices = {
       .vertices = VERTICES,
-      .indices = INDICES,
       .size = sizeof(VERTICES),
-      .iSize = sizeof(INDICES)
   };
 
   // === Init begin ===
@@ -118,12 +95,8 @@ int main(void) {
   // === setup gl objects ===
   GLuint VAO; // vertex array object
   GLuint VBO; // vertex buffer object
-  GLuint EBO; // element buffer object
-
-  // generate gl objects
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
-  glGenBuffers(1, &EBO);
 
   /// setup how to interpret the buffer data
   glBindVertexArray(VAO);
@@ -132,14 +105,15 @@ int main(void) {
   glBufferData(
       GL_ARRAY_BUFFER, vertices.size, vertices.vertices, GL_STATIC_DRAW
   );
-  // copy index data from ram to vram
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(
-      GL_ELEMENT_ARRAY_BUFFER, vertices.iSize, vertices.indices, GL_STATIC_DRAW
-  );
   // set vertex attribute pointers
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+  // position attribute
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
+  // color attribute
+  glVertexAttribPointer(
+      1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float))
+  );
+  glEnableVertexAttribArray(1);
 
   // === Application loop ==
   runApp(w, VAO, shader);

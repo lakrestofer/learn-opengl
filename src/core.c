@@ -10,7 +10,6 @@ void processInput(GLFWwindow* window) {
 }
 
 int runApp(GLFWwindow* w, GLuint VAO, Shader shader) {
-
   while (!glfwWindowShouldClose(w)) {
 
     processInput(w); // handle any events
@@ -28,7 +27,7 @@ int runApp(GLFWwindow* w, GLuint VAO, Shader shader) {
         1.0f
     );
     glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
     glBindVertexArray(0);
 
     glfwSwapBuffers(w); // swap buffer
