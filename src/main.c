@@ -55,14 +55,15 @@ unsigned int INDICES[] = {
 const char *VERTEX_SHADER_SRC = GLSL(
     layout(location = 0) in vec3 aPos;
     void main() {
-      gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
+      gl_Position = vec4(aPos, 1.0);
     }
 );
 // colors each pixel within the triangle red
 const char *FRAGMENT_SHADER_SRC = GLSL(
   out vec4 FragColor;
+  uniform vec4 ourColor;
   void main() {
-      FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    FragColor = ourColor;
   }
 );
 // clang-format on

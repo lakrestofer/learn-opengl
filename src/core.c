@@ -1,4 +1,5 @@
 // external imports
+#include <math.h>
 #include <stdio.h>
 // interntal imports
 #include "app/core.h"
@@ -80,15 +81,24 @@ int runApp(GLFWwindow* w, Vertices vs, ShaderSrc vss, ShaderSrc fss) {
   glEnableVertexAttribArray(0);
 
   while (!glfwWindowShouldClose(w)) {
-    // glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // set the clear color
-    // glClear(GL_COLOR_BUFFER_BIT);         // clear buffer
+
+    processInput(w); // handle any events
+
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(sProgram); // activate the program for use
+    int vertexColorLocation = glGetUniformLocation(sProgram, "ourColor");
+    glUniform4f(
+        vertexColorLocation,
+        0.0f,
+        (sin(glfwGetTime()) / 2.0f) + 0.5f,
+        0.0f,
+        1.0f
+    );
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
-
-    processInput(w); // handle any events
 
     glfwSwapBuffers(w); // swap buffer
     glfwPollEvents();   // poll for more events
