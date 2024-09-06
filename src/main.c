@@ -1,9 +1,11 @@
+// system dependencies
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
 #include <stdio.h>
 #include <stdbool.h>
-
+// local dependencies
 #include "app/core.h"
+#include "shaders/utils.h"
 
 #define H 480
 #define W 640
@@ -19,22 +21,68 @@ void printGlVer(int v) { printf("Loaded OpenGL %d.%d\n", GLMA(v), GLMI(v)); }
 
 // === callbacks ===
 
-void onResizeScreen(GLFWwindow *window, int width, int height) {
+void onResizeScreen(GLFWwindow* _, int width, int height) {
   glViewport(0, 0, width, height);
 }
 
 // === application code ===
+float VERTICES[] = {
+    0.5f,
+    0.5f,
+    0.0f, // top right
+    0.5f,
+    -0.5f,
+    0.0f, // bottom right
+    -0.5f,
+    -0.5f,
+    0.0f, // bottom left
+    -0.5f,
+    0.5f,
+    0.0f // top left
+};
+unsigned int INDICES[] = {
+    // note that we start from 0!
+    0,
+    1,
+    3,
+    1,
+    2,
+    3
+};
+
+// clang-format off
+// does no transformation on the vertices
+const char *VERTEX_SHADER_SRC = GLSL(
+    layout(location = 0) in vec3 aPos;
+    void main() {
+      gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
+    }
+);
+// colors each pixel within the triangle red
+const char *FRAGMENT_SHADER_SRC = GLSL(
+  out vec4 FragColor;
+  void main() {
+      FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+  }
+);
+// clang-format on
 
 int main(void) {
   /// window
-  GLFWwindow *w = NULL;
+  GLFWwindow* w = NULL;
   /// version
   int v = 0;
+  Vertices vertices = {
+      .vertices = VERTICES,
+      .indices = INDICES,
+      .size = sizeof(VERTICES),
+      .iSize = sizeof(INDICES)
+  };
 
   // === Init begin ===
   if (!glfwInit()) return -1;
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   w = glfwCreateWindow(W, H, WT, NULL, NULL); // create window and context
   if (!w) goto clean;                         // if unsuccessful goto cleanup
@@ -44,11 +92,11 @@ int main(void) {
   glViewport(0, 0, W, H);             // set the viewport
   printGlVer(v);                      // print version
 
-  glfwSetFramebufferSizeCallback(
-      w, onResizeScreen); // register callback to run when screen resizes
+  glfwSetFramebufferSizeCallback(w, onResizeScreen); // register callback to run
+                                                     // when screen resizes
 
   // === Application loop ==
-  run_app(w);
+  runApp(w, vertices, VERTEX_SHADER_SRC, FRAGMENT_SHADER_SRC);
 
   // === Cleanup ===
 clean:

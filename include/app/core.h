@@ -5,8 +5,16 @@
 #include <GLFW/glfw3.h>
 #include <stdbool.h>
 
-/// start the application loop
-int run_app(GLFWwindow *w);
+typedef struct {
+  const float* vertices;
+  const unsigned int* indices;
+  GLsizeiptr size;
+  GLsizeiptr iSize;
+} Vertices;
 
+typedef const char* ShaderSrc;
+
+/// start the application loop
+int runApp(GLFWwindow*, Vertices, ShaderSrc, ShaderSrc);
 
 #endif
