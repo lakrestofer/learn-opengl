@@ -1,4 +1,5 @@
 # TODO
 
 ## First steps
-- [ ] render a red triangle
+- [X] render a red triangle
+- [ ] render a texture over a triangle

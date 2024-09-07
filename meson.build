@@ -19,16 +19,11 @@ deps = [
   m_dep,
 ]
 
-src = [
-  './src/main.c',
-  './src/gl.c',
-  './src/core.c',
-  './src/shader.c'
-]
+subdir('src')
 incdir = include_directories('include')
 exe = executable(
   'learn-opengl',
-  sources: src,
+  sources: sources,
   include_directories : incdir,
   dependencies: deps,
   install : false
