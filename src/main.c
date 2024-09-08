@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 // local dependencies
-#include "app/core.h"
 #include "shaders/utils.h"
+#include "shaders/shader.h"
 #include "external/stb_image.h"
 
 #define H 480
@@ -58,11 +58,11 @@ const char *FRAGMENT_SHADER_SRC = GLSL(
     out vec4 FragColor;
     in vec3 ourColor;
     in vec2 TexCoord;
-    uniform sampler2D ourTexture;
+    uniform sampler2D texture1;
+    uniform sampler2D texture2;
     void main() {
-        // FragColor = texture(ourTexture, TexCoord);
-        FragColor = texture(ourTexture, TexCoord) * vec4(ourColor, 1.0);  
-    }
+        FragColor = mix(texture(texture1, TexCoord), texture(texture2, TexCoord), 0.2);
+    }    
 );
 // clang-format on
 
@@ -72,15 +72,17 @@ void setWindowContext(void) {
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 }
 
+void processInput(GLFWwindow* window) {
+  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+    glfwSetWindowShouldClose(window, true);
+  }
+}
+
 int main(void) {
   /// window
   GLFWwindow* w = NULL;
   /// version
   int v = 0;
-  Vertices vertices = {
-      .vertices = VERTICES,
-      .size = sizeof(VERTICES),
-  };
 
   // === Init glfw and gl context ===
   if (!glfwInit()) return -1;
@@ -108,10 +110,12 @@ int main(void) {
 
   // === load textures ===
   int iw, ih, nbrChnls;
+  stbi_set_flip_vertically_on_load(true);
   unsigned char* data = stbi_load("container.jpg", &iw, &ih, &nbrChnls, 0);
-  unsigned int texture;
-  glGenTextures(1, &texture);
-  glBindTexture(GL_TEXTURE_2D, texture);
+  // texture 1
+  GLuint texture1;
+  glGenTextures(1, &texture1);
+  glBindTexture(GL_TEXTURE_2D, texture1);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(
@@ -120,6 +124,22 @@ int main(void) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexImage2D(
       GL_TEXTURE_2D, 0, GL_RGB, iw, ih, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+  );
+  glGenerateMipmap(GL_TEXTURE_2D);
+  stbi_image_free(data);
+  // texture 2
+  data = stbi_load("awesomeface.png", &iw, &ih, &nbrChnls, 0);
+  GLuint texture2;
+  glGenTextures(1, &texture2);
+  glBindTexture(GL_TEXTURE_2D, texture2);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(
+      GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR
+  );
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(
+      GL_TEXTURE_2D, 0, GL_RGB, iw, ih, 0, GL_RGBA, GL_UNSIGNED_BYTE, data
   );
   glGenerateMipmap(GL_TEXTURE_2D);
   stbi_image_free(data);
@@ -135,12 +155,10 @@ int main(void) {
   // setup how to interpret the buffer data
   glBindVertexArray(VAO);
   // bind texture
-  glBindTexture(GL_TEXTURE_2D, texture);
+  glBindTexture(GL_TEXTURE_2D, texture1);
   // copy vertex data from ram to vram
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(
-      GL_ARRAY_BUFFER, vertices.size, vertices.vertices, GL_STATIC_DRAW
-  );
+  glBufferData(GL_ARRAY_BUFFER, sizeof(VERTICES), VERTICES, GL_STATIC_DRAW);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
   glBufferData(
       GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW
@@ -158,8 +176,35 @@ int main(void) {
   );
   glEnableVertexAttribArray(2);
 
+  // activate texture
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture1);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, texture2);
+
+  // tell opengl which texture unit each shader sampler belongs to
+  glUseProgram(shader);
+  glUniform1i(glGetUniformLocation(shader, "texture1"), 0);
+  glUniform1i(glGetUniformLocation(shader, "texture2"), 1);
+
   // === Application loop ==
-  runApp(w, VAO, shader);
+  while (!glfwWindowShouldClose(w)) {
+    processInput(w); // handle any events
+
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // activate the program for use
+    glUseProgram(shader);
+
+    glBindVertexArray(VAO);
+    // glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+
+    glfwSwapBuffers(w); // swap buffer
+    glfwPollEvents();   // poll for more events
+  }
 
   // === Cleanup ===
 clean:
