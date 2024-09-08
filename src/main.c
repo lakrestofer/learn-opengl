@@ -60,7 +60,8 @@ const char *FRAGMENT_SHADER_SRC = GLSL(
     in vec2 TexCoord;
     uniform sampler2D ourTexture;
     void main() {
-        FragColor = texture(ourTexture, TexCoord);
+        // FragColor = texture(ourTexture, TexCoord);
+        FragColor = texture(ourTexture, TexCoord) * vec4(ourColor, 1.0);  
     }
 );
 // clang-format on
@@ -151,7 +152,7 @@ int main(void) {
   glVertexAttribPointer(
       1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))
   );
-  glEnableVertexAttribArray(0);
+  glEnableVertexAttribArray(1);
   glVertexAttribPointer(
       2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))
   );
