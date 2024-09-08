@@ -31,10 +31,10 @@ void onResizeScreen(GLFWwindow* _, int width, int height) {
 // clang-format off
 float VERTICES[] = {
     // positions          // colors           // texture coords
-     0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-     0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+     0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   2.0f, 2.0f,   // top right
+     0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   2.0f, 0.0f,   // bottom right
     -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 2.0f    // top left 
 };
 unsigned int indices[] = {  // note that we start from 0!
     0, 1, 3,   // first triangle
@@ -61,7 +61,7 @@ const char *FRAGMENT_SHADER_SRC = GLSL(
     uniform sampler2D texture1;
     uniform sampler2D texture2;
     void main() {
-        FragColor = mix(texture(texture1, TexCoord), texture(texture2, TexCoord), 0.2);
+        FragColor = mix(texture(texture1, TexCoord), texture(texture2, vec2(1.0 - TexCoord.x, TexCoord.y)), 0.2);
     }    
 );
 // clang-format on
