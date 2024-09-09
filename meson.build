@@ -1,6 +1,6 @@
 project('learn-opengl', 'c',
   version : '0.1',
-  default_options : ['warning_level=3'])
+  default_options : ['warning_level=3', 'c_std=c11'])
 
 
 # system dependencies
@@ -15,6 +15,7 @@ m_dep = cc.find_library('m', required : false)
 deps = [
   glfw_dep,
   cblas_dep,
+  cglm_dep,
   assimp_dep,
   m_dep,
 ]

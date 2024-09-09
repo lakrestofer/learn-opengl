@@ -1,2 +1,2 @@
 #!/bin/sh
-CC=clang meson compile -C builddir
+CC=clang meson compile -C builddir 

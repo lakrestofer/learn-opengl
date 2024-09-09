@@ -1,11 +1,16 @@
 // system dependencies
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
+#include <cglm/affine.h>
+#include <cglm/mat4.h>
+#include <cglm/types.h>
 #include <stdbool.h>
+#include <cglm/cglm.h>
 // local dependencies
 #include "init.h"
 #include "shaders/utils.h"
 #include "shaders/shader.h"
+#include "textures/texture.h"
 #include "external/stb_image.h"
 
 // === callbacks ===
@@ -92,40 +97,8 @@ int main(void) {
   for (int i = 0; i < 2; i++) glDeleteShader(shaders[i]);
 
   // === load textures ===
-  int iw, ih, nbrChnls;
-  stbi_set_flip_vertically_on_load(true);
-  unsigned char* data = stbi_load("container.jpg", &iw, &ih, &nbrChnls, 0);
-  // texture 1
-  GLuint texture1;
-  glGenTextures(1, &texture1);
-  glBindTexture(GL_TEXTURE_2D, texture1);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(
-      GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR
-  );
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(
-      GL_TEXTURE_2D, 0, GL_RGB, iw, ih, 0, GL_RGB, GL_UNSIGNED_BYTE, data
-  );
-  glGenerateMipmap(GL_TEXTURE_2D);
-  stbi_image_free(data);
-  // texture 2
-  data = stbi_load("awesomeface.png", &iw, &ih, &nbrChnls, 0);
-  GLuint texture2;
-  glGenTextures(1, &texture2);
-  glBindTexture(GL_TEXTURE_2D, texture2);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(
-      GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR
-  );
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(
-      GL_TEXTURE_2D, 0, GL_RGB, iw, ih, 0, GL_RGBA, GL_UNSIGNED_BYTE, data
-  );
-  glGenerateMipmap(GL_TEXTURE_2D);
-  stbi_image_free(data);
+  GLuint texture1 = createTexture("container.jpg", JPG);
+  GLuint texture2 = createTexture("awesomeface.png", PNG);
 
   // === setup gl objects ===
   GLuint VAO;       // vertex array object
@@ -173,6 +146,17 @@ int main(void) {
   int mixRatioLoc = glGetUniformLocation(shader, "mixRatio");
   float mixRatio = 0.5;
   glUniform1f(mixRatioLoc, mixRatio);
+
+  // == we setup our scaling,rotation,translation matrices
+  vec4 vec = {1.0f, 0.0f, 0.0f, 1.0f};
+
+  mat4 transformation = GLM_MAT4_IDENTITY;
+  glm_translate(transformation, (vec3){1.0, 1.0, 0.0});
+  glm_rotate(transformation, CGLM_PI_2, (vec3){0.0, 0.0, 1.0});
+  glm_scale(transformation, (vec3){0.5, 0.5, 0.5});
+
+  vec4 dest;
+  glm_mat4_mulv(transformation, vec, dest);
 
   // === Application loop ==
   while (!glfwWindowShouldClose(w)) {
