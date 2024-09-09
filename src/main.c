@@ -1,24 +1,12 @@
 // system dependencies
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
-#include <stdio.h>
 #include <stdbool.h>
 // local dependencies
+#include "init.h"
 #include "shaders/utils.h"
 #include "shaders/shader.h"
 #include "external/stb_image.h"
-
-#define H 480
-#define W 640
-#define WT "Hello World"
-
-#define GLMA(v) GLAD_VERSION_MAJOR(v)
-#define GLMI(v) GLAD_VERSION_MINOR(v)
-
-typedef enum { UNKNOWN, GLFW_CREATE_WINDOW_ERROR, GLAD_INIT_ERROR } ErrorCode;
-
-/// prints the open gl version
-void printGlVer(int v) { printf("Loaded OpenGL %d.%d\n", GLMA(v), GLMI(v)); }
 
 // === callbacks ===
 
@@ -60,40 +48,35 @@ const char *FRAGMENT_SHADER_SRC = GLSL(
     in vec2 TexCoord;
     uniform sampler2D texture1;
     uniform sampler2D texture2;
+    uniform float mixRatio;
     void main() {
-        FragColor = mix(texture(texture1, TexCoord), texture(texture2, vec2(1.0 - TexCoord.x, TexCoord.y)), 0.2);
+        FragColor = mix(texture(texture1, TexCoord), texture(texture2, vec2(1.0 - TexCoord.x, TexCoord.y)), mixRatio);
     }    
 );
 // clang-format on
 
-void setWindowContext(void) {
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-}
-
-void processInput(GLFWwindow* window) {
+void processInput(GLFWwindow* window, float* mixRatio, int mixRatioLoc) {
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, true);
+  }
+  if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+    *mixRatio -= 0.01;
+    if (*mixRatio > 1.0) *mixRatio = 1.0;
+    if (*mixRatio < 0.0) *mixRatio = 0;
+    glUniform1f(mixRatioLoc, *mixRatio);
+  }
+  if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+    *mixRatio += 0.01;
+    if (*mixRatio > 1.0) *mixRatio = 1.0;
+    if (*mixRatio < 0.0) *mixRatio = 0;
+    glUniform1f(mixRatioLoc, *mixRatio);
   }
 }
 
 int main(void) {
-  /// window
-  GLFWwindow* w = NULL;
-  /// version
-  int v = 0;
 
   // === Init glfw and gl context ===
-  if (!glfwInit()) return -1;
-  setWindowContext();
-  w = glfwCreateWindow(W, H, WT, NULL, NULL); // create window and context
-  if (!w) goto clean;                         // if unsuccessful goto cleanup
-  glfwMakeContextCurrent(w);          // set the context to current context
-  v = gladLoadGL(glfwGetProcAddress); // setup opengl function pointers
-  if (v == 0) goto clean;             // if unsuccsesfull goto cleanup
-  glViewport(0, 0, W, H);             // set the viewport
-  printGlVer(v);                      // print version
+  GLFWwindow* w = initAndCreateWindow();
 
   // === register callbacks ==
   glfwSetFramebufferSizeCallback(w, onResizeScreen); // register callback to run
@@ -187,9 +170,13 @@ int main(void) {
   glUniform1i(glGetUniformLocation(shader, "texture1"), 0);
   glUniform1i(glGetUniformLocation(shader, "texture2"), 1);
 
+  int mixRatioLoc = glGetUniformLocation(shader, "mixRatio");
+  float mixRatio = 0.5;
+  glUniform1f(mixRatioLoc, mixRatio);
+
   // === Application loop ==
   while (!glfwWindowShouldClose(w)) {
-    processInput(w); // handle any events
+    processInput(w, &mixRatio, mixRatioLoc);
 
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -210,6 +197,5 @@ int main(void) {
 clean:
   glfwTerminate();
   if (!w) return -1; // glfw could not init window
-  if (!v) return -1; // glad could not init opengl
   return 0;
 }
