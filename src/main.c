@@ -10,6 +10,10 @@
 #include "textures/texture.h"
 #include "external/stb_image.h"
 
+#define H 480
+#define W 640
+#define WT "Hello World"
+
 // === callbacks ===
 
 void onResizeScreen(GLFWwindow* _, int width, int height) {
@@ -37,9 +41,13 @@ const char *VERTEX_SHADER_SRC = GLSL(
 
     out vec2 TexCoord;
 
-    uniform mat4 transform;
+    uniform mat4 model;
+    uniform mat4 view;
+    uniform mat4 projection;
+
+    
     void main() {
-        gl_Position = transform * vec4(aPos, 1.0);
+        gl_Position = projection * view * model * vec4(aPos, 1.0);
         TexCoord = aTexCoord;
     }
 );
@@ -123,21 +131,24 @@ int main(void) {
 
   // == we setup our scaling,rotation,translation matrices
 
-  mat4 trans = GLM_MAT4_IDENTITY;
-  // glm_translate(trans, (vec3){0.3, 0.3, 0.0});
-  glm_scale(trans, (vec3){0.8, 0.8, 0.8});
+  mat4 model = GLM_MAT4_IDENTITY;
+  glm_rotate(model, glm_rad(-55.0f), (vec3){1, 0, 0});
+  mat4 view = GLM_MAT4_IDENTITY;
+  glm_translate(view, (vec3){0, 0, -3});
+  mat4 projection = GLM_MAT4_IDENTITY;
+  glm_perspective(glm_rad(45.0), W / H, 0.1, 100.0, projection);
 
-  GLuint transformLoc = glGetUniformLocation(shader, "transform");
-  glUniformMatrix4fv(transformLoc, 1, GL_FALSE, (GLfloat*)trans);
+  GLuint modelLoc = glGetUniformLocation(shader, "model");
+  GLuint viewLoc = glGetUniformLocation(shader, "view");
+  GLuint projectionLoc = glGetUniformLocation(shader, "projection");
+
+  glUniformMatrix4fv(modelLoc, 1, GL_FALSE, (float*)model);
+  glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (float*)view);
+  glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (float*)projection);
 
   // === Application loop ==
   while (!glfwWindowShouldClose(w)) {
     processInput(w);
-
-    mat4 transCopy;
-    glm_mat4_copy(trans, transCopy);
-    glm_rotate(transCopy, sin(glfwGetTime()) * 3.14, (vec3){0, 0, 1});
-    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, (GLfloat*)transCopy);
 
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
