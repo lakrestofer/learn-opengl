@@ -1,8 +1,10 @@
 // system dependencies
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
+#include <cglm/cam.h>
 #include <cglm/cglm.h>
 #include <cglm/mat4.h>
+#include <cglm/vec3.h>
 #include <stdbool.h>
 // local dependencies
 #include "init.h"
@@ -15,6 +17,14 @@
 #define W 640
 #define WT "Hello World"
 
+typedef struct {
+  vec3 pos;
+  vec3 up;
+  vec3 front;
+  vec3 left;
+  vec4 right;
+} Camera;
+
 // === callbacks ===
 
 void onResizeScreen(GLFWwindow* _, int width, int height) {
@@ -24,6 +34,18 @@ void onResizeScreen(GLFWwindow* _, int width, int height) {
 // === application code ===
 
 // clang-format off
+vec3 cubePositions[] = {
+    { 0.0f,  0.0f,  0.0f},
+    { 2.0f,  5.0f, -15.0f},
+    {-1.5f, -2.2f, -2.5f}, 
+    {-3.8f, -2.0f, -12.3f}, 
+    { 2.4f, -0.4f, -3.5f}, 
+    {-1.7f,  3.0f, -7.5f}, 
+    { 1.3f, -2.0f, -2.5f}, 
+    { 1.5f,  2.0f, -2.5f},
+    { 1.5f,  0.2f, -1.5f},
+    {-1.3f,  1.0f, -1.5f} 
+};
 float vertices[] = {
     -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
      0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
@@ -95,12 +117,29 @@ const char *FRAGMENT_SHADER_SRC = GLSL(
 );
 // clang-format on
 
-void processInput(GLFWwindow* window) {
+#define CAMERA_SPEED 0.05f
+
+void processInput(GLFWwindow* window, Camera* camera) {
+  vec3 diff;
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, true);
   }
-  if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {}
-  if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {}
+  if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+    glm_vec3_scale(camera->front, CAMERA_SPEED, diff);
+    glm_vec3_add(camera->pos, diff, camera->pos);
+  }
+  if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+    glm_vec3_scale(camera->front, -CAMERA_SPEED, diff);
+    glm_vec3_add(camera->pos, diff, camera->pos);
+  }
+  if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+    glm_vec3_scale(camera->left, CAMERA_SPEED, diff);
+    glm_vec3_add(camera->pos, diff, camera->pos);
+  }
+  if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+    glm_vec3_scale(camera->right, CAMERA_SPEED, diff);
+    glm_vec3_add(camera->pos, diff, camera->pos);
+  }
 }
 
 int main(void) {
@@ -161,10 +200,20 @@ int main(void) {
 
   // == we setup our scaling,rotation,translation matrices
 
+  // camera
+  Camera camera = {.pos = {0, 0, 3}, .front = {0, 0, -1}, .up = {0, 1, 0}};
+  glm_cross(camera.front, camera.up, camera.right);
+  glm_vec3_normalize(camera.right);
+  glm_vec3_negate_to(camera.right, camera.left);
+
+  // model view projection matrices
   mat4 model = GLM_MAT4_IDENTITY;
   glm_rotate(model, glm_rad(-55.0f), (vec3){1, 0, 0});
-  mat4 view = GLM_MAT4_IDENTITY;
-  glm_translate(view, (vec3){0, 0, -3});
+  mat4 view;
+  vec3 cameraPos2;
+  glm_vec3_add(camera.pos, camera.front, cameraPos2);
+  glm_lookat(camera.pos, cameraPos2, camera.up, view);
+
   mat4 projection = GLM_MAT4_IDENTITY;
   glm_perspective(glm_rad(45.0), W / H, 0.1, 100.0, projection);
 
@@ -178,25 +227,29 @@ int main(void) {
 
   // === Application loop ==
   while (!glfwWindowShouldClose(w)) {
-    processInput(w);
+    processInput(w, &camera);
 
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    mat4 modelCopy;
-    glm_mat4_copy(model, modelCopy);
-    glm_rotate(
-        modelCopy, (float)glfwGetTime() * glm_rad(50.0f), (vec3){0.5, 1, 0}
-    );
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, (float*)modelCopy);
 
     // activate the program for use
     glUseProgram(shader);
 
     glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
+
+    mat4 localView;
+    glm_vec3_add(camera.pos, camera.front, cameraPos2);
+    glm_lookat(camera.pos, cameraPos2, camera.up, localView);
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (float*)localView);
+
+    for (int i = 0; i < 10; i++) {
+      mat4 localModel = GLM_MAT4_IDENTITY;
+      glm_translate(localModel, cubePositions[i]);
+      float angle = 20.0f * i;
+      glm_rotate(model, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
+      glUniformMatrix4fv(modelLoc, 1, GL_FALSE, (float*)localModel);
+      glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
 
     glfwSwapBuffers(w); // swap buffer
     glfwPollEvents();   // poll for more events
