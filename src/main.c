@@ -131,6 +131,9 @@ int main(void) {
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
 
+  // enable some gl settings
+  glEnable(GL_DEPTH_TEST);
+
   // setup how to interpret the buffer data
   glBindVertexArray(VAO);
   // bind texture
@@ -178,7 +181,7 @@ int main(void) {
     processInput(w);
 
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     mat4 modelCopy;
     glm_mat4_copy(model, modelCopy);
