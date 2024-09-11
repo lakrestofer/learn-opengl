@@ -166,7 +166,7 @@ PenaltyBreakAssignment: 2
 PenaltyBreakBeforeFirstCallParameter: 19
 PenaltyBreakComment: 0
 PenaltyBreakFirstLessLess: 120
-PenaltyBreakOpenParenthesis: 0
+PenaltyBreakOpenParenthesis: 1
 PenaltyBreakScopeResolution: 500
 PenaltyBreakString: 1000
 PenaltyBreakTemplateDeclaration: 10
