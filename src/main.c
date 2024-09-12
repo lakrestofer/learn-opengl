@@ -1,6 +1,7 @@
 // system dependencies
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
+#include <cglm/cam.h>
 #include <cglm/cglm.h>
 #include <cglm/mat4.h>
 #include <cglm/vec3.h>
@@ -15,30 +16,35 @@
 int H    = 480;
 int W    = 640;
 char* WT = "Hello World";
+vec3 UP  = {0, 1, 0};
 
 typedef struct {
   float yaw;
   float pitch;
   vec3 pos;
   vec3 front;
+  vec3 right;
 } Camera;
 
 Camera defaultCamera(void) {
-  vec3 up   = {0};
-  vec3 left = {0};
-  Camera c  = {
-       .yaw   = -90.0f,
-       .pitch = 0,
-       .pos   = {0, 0, 3},
-       .front = {0, 0, -1},
+  Camera c = {
+      .yaw   = -90.0f,
+      .pitch = 0,
+      .pos   = {0, 0, 3},
+      .front = {0, 0, -1},
   };
+  glm_cross(UP, c.front, c.right);
+  glm_vec3_normalize(c.right);
+
+  vec3 posFrontSum;
+  glm_vec3_add(c.pos, c.front, posFrontSum);
   return c;
 }
-/// generates the 'look at' matrix given current camera state
+// /// generates the 'look at' matrix given current camera state
 void cameraLookAt(Camera* c, mat4 to) {
   vec3 posFrontSum;
   glm_vec3_add(c->pos, c->front, posFrontSum);
-  glm_lookat(c->pos, posFrontSum, (vec3){0, 1, 0}, to);
+  glm_lookat(c->pos, posFrontSum, UP, to);
 }
 
 void moveCameraForward(Camera* c, float speed) {
@@ -49,6 +55,16 @@ void moveCameraForward(Camera* c, float speed) {
 void moveCameraBackward(Camera* c, float speed) {
   vec3 direction;
   glm_vec3_scale(c->front, speed, direction);
+  glm_vec3_sub(c->pos, direction, c->pos);
+}
+void moveCameraLeft(Camera* c, float speed) {
+  vec3 direction;
+  glm_vec3_scale(c->right, speed, direction);
+  glm_vec3_add(c->pos, direction, c->pos);
+}
+void moveCameraRight(Camera* c, float speed) {
+  vec3 direction;
+  glm_vec3_scale(c->right, speed, direction);
   glm_vec3_sub(c->pos, direction, c->pos);
 }
 
@@ -190,10 +206,12 @@ void handleInput(GLFWwindow* w, GameState* s) {
   if (keyPressed(ESCAPE)) closeWindow();
   if (keyPressed(UP)) moveCameraForward(&s->camera, 2.5f * dt);
   if (keyPressed(DOWN)) moveCameraBackward(&s->camera, 2.5f * dt);
+  if (keyPressed(LEFT)) moveCameraLeft(&s->camera, 2.5f * dt);
+  if (keyPressed(RIGHT)) moveCameraRight(&s->camera, 2.5f * dt);
 }
 
 bool firstMouse = true;
-void mouse_callback(GLFWwindow* w, double cx, double cy) {
+void mouseCallback(GLFWwindow* w, double cx, double cy) {
   GameState* s = glfwGetWindowUserPointer(w);
   if (!s) return;
 
@@ -211,13 +229,14 @@ void mouse_callback(GLFWwindow* w, double cx, double cy) {
   s->camera.pitch += dy * 0.2f;
   if (s->camera.pitch > 89.0f) s->camera.pitch = 89.0f;
   if (s->camera.pitch < -89.0f) s->camera.pitch = -89.0f;
-  vec3 dir = {
-      cos(glm_rad(s->camera.yaw)) * cos(glm_rad(s->camera.pitch)),
-      sin(glm_rad(s->camera.pitch)),
-      sin(glm_rad(s->camera.yaw)) * cos(glm_rad(s->camera.pitch)),
-  };
-  glm_normalize(dir);
-  memcpy(s->camera.front, dir, sizeof(vec3));
+  s->camera.front[0] =
+      cos(glm_rad(s->camera.yaw)) * cos(glm_rad(s->camera.pitch));
+  s->camera.front[1] = sin(glm_rad(s->camera.pitch));
+  s->camera.front[2] =
+      sin(glm_rad(s->camera.yaw)) * cos(glm_rad(s->camera.pitch));
+  glm_normalize(s->camera.front);
+  glm_cross(UP, s->camera.front, s->camera.right);
+  glm_vec3_normalize(s->camera.right);
 }
 
 int main(void) {
@@ -233,7 +252,7 @@ int main(void) {
   // === register callbacks ==
   // register callback to run  when screen resizes
   glfwSetFramebufferSizeCallback(w, onResizeScreen);
-  glfwSetCursorPosCallback(w, mouse_callback);
+  glfwSetCursorPosCallback(w, mouseCallback);
 
   // === compile and link shaders ==
   GLuint cube_vert_shader  = initVShader(CUBE_VSHADER);
