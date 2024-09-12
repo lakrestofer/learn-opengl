@@ -1,7 +1,6 @@
 // system dependencies
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
-#include <cglm/cam.h>
 #include <cglm/cglm.h>
 #include <cglm/mat4.h>
 #include <cglm/vec3.h>
@@ -13,13 +12,9 @@
 #include "shaders/shader.h"
 #include "external/stb_image.h"
 
-#define H 480
-#define W 640
-#define WT "Hello World"
-
-// some aliases for functions to make them shorter
-#define onScreenResize glfwSetFramebufferSizeCallback
-#define onCursorEvent glfwSetCursorPosCallback
+int H    = 480;
+int W    = 640;
+char* WT = "Hello World";
 
 typedef struct {
   float yaw;
@@ -29,11 +24,13 @@ typedef struct {
 } Camera;
 
 Camera defaultCamera(void) {
-  Camera c = {
-      .yaw = -90.0f,
-      .pitch = 0,
-      .pos = {0, 0, 3},
-      .front = {0, 0, -1},
+  vec3 up   = {0};
+  vec3 left = {0};
+  Camera c  = {
+       .yaw   = -90.0f,
+       .pitch = 0,
+       .pos   = {0, 0, 3},
+       .front = {0, 0, -1},
   };
   return c;
 }
@@ -90,8 +87,8 @@ typedef struct {
 
 GameState defaultGameState(void) {
   GameState state = {
-      .camera = defaultCamera(),
-      .cursor = defaultCursorPos(),
+      .camera  = defaultCamera(),
+      .cursor  = defaultCursorPos(),
       .frame_t = defaultFrameTime(),
   };
   return state;
@@ -99,68 +96,72 @@ GameState defaultGameState(void) {
 
 // === callbacks ===
 
+bool screenResized = false;
 void onResizeScreen(GLFWwindow* _, int width, int height) {
   glViewport(0, 0, width, height);
+  W             = width;
+  H             = height;
+  screenResized = true;
 }
 
 // === application code ===
 
 // clang-format off
 float vertices[] = {
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,
+     0.5f, -0.5f, -0.5f,
+     0.5f,  0.5f, -0.5f,
+     0.5f,  0.5f, -0.5f,
+    -0.5f,  0.5f, -0.5f,
+    -0.5f, -0.5f, -0.5f,
 
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,
+     0.5f, -0.5f,  0.5f,
+     0.5f,  0.5f,  0.5f,
+     0.5f,  0.5f,  0.5f,
+    -0.5f,  0.5f,  0.5f,
+    -0.5f, -0.5f,  0.5f,
 
-    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,
+    -0.5f,  0.5f, -0.5f,
+    -0.5f, -0.5f, -0.5f,
+    -0.5f, -0.5f, -0.5f,
+    -0.5f, -0.5f,  0.5f,
+    -0.5f,  0.5f,  0.5f,
 
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,
+     0.5f,  0.5f, -0.5f,
+     0.5f, -0.5f, -0.5f,
+     0.5f, -0.5f, -0.5f,
+     0.5f, -0.5f,  0.5f,
+     0.5f,  0.5f,  0.5f,
 
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,
+     0.5f, -0.5f, -0.5f,
+     0.5f, -0.5f,  0.5f,
+     0.5f, -0.5f,  0.5f,
+    -0.5f, -0.5f,  0.5f,
+    -0.5f, -0.5f, -0.5f,
 
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+    -0.5f,  0.5f, -0.5f,
+     0.5f,  0.5f, -0.5f,
+     0.5f,  0.5f,  0.5f,
+     0.5f,  0.5f,  0.5f,
+    -0.5f,  0.5f,  0.5f,
+    -0.5f,  0.5f, -0.5f
 };
-const int vertex_stride =  (5 * sizeof(float));
+const int vertex_stride =  (3 * sizeof(float));
 const void* vertex_offset = (void*) 0;
 // does no transformation on the vertices
 const char* CUBE_VSHADER = GLSL(
     layout (location = 0) in vec3 aPos;
 
-    uniform mat4 model;
-    uniform mat4 view;
-    uniform mat4 projection;
+    uniform mat4 m;
+    uniform mat4 v;
+    uniform mat4 p;
    
     void main() {
-        gl_Position = projection * view * model * vec4(aPos, 1.0);
+        gl_Position = p * v * m * vec4(aPos, 1.0);
     }
 );
 // colors each pixel within the triangle red
@@ -174,10 +175,8 @@ const char* CUBE_FSHADER = GLSL(
 );
 const char* LIGHT_CUBE_FSHADER = GLSL(
   out vec4 FragColor;
-  uniform vec3 objectColor;
-  uniform vec3 lightColor;
   void main() {
-      FragColor = vec4(lightColor * objectColor, 1.0);
+      FragColor = vec4(1.0);
   }
 );
 // clang-format on
@@ -201,11 +200,11 @@ void mouse_callback(GLFWwindow* w, double cx, double cy) {
   if (firstMouse) {
     s->cursor.x = cx;
     s->cursor.y = cy;
-    firstMouse = false;
+    firstMouse  = false;
   }
 
-  double dx = (cx - s->cursor.x);
-  double dy = (s->cursor.y - cy);
+  double dx   = (cx - s->cursor.x);
+  double dy   = (s->cursor.y - cy);
   s->cursor.x = cx;
   s->cursor.y = cy;
   s->camera.yaw += dx * 0.2f;
@@ -223,105 +222,115 @@ void mouse_callback(GLFWwindow* w, double cx, double cy) {
 
 int main(void) {
   // === Init glfw and gl context ===
-  GLFWwindow* w = initAndCreateWindow();
+  GLFWwindow* w = initAndCreateWindow(W, H, WT);
 
   // === set glfw settings ===
   glfwSetInputMode(w, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-  // === register callbacks ==
-  // register callback to run  when screen resizes
-  onScreenResize(w, onResizeScreen);
-  onCursorEvent(w, mouse_callback);
-
-  // === compile and link shaders ==
-  GLuint cvs = initVShader(CUBE_VSHADER);
-  GLuint cfs = initFShader(CUBE_FSHADER);
-  GLuint lcfs = initFShader(LIGHT_CUBE_FSHADER);
-  if (!shaderIsValid(cvs) || !shaderIsValid(cfs)) goto clean;
-  GLuint cube_shader = linkShaders(cvs, cfs);
-  GLuint light_cube_shader = linkShaders(cvs, lcfs);
-  if (!shaderProgramIsValid(cube_shader)) goto clean;
-  glDeleteShader(cvs);
-  glDeleteShader(cfs);
-  glDeleteShader(lcfs);
-
-  // === load textures ===
-
-  // === setup gl objects ===
-  GLuint light_VAO; // vertex array object
-  GLuint VAO;       // vertex array object
-  GLuint VBO;       // vertex buffer object
-  glGenVertexArrays(1, &VAO);
-  glGenBuffers(1, &VBO);
-  glGenVertexArrays(1, &light_VAO);
-
-  // enable some gl settings
+  // === gl settings ===
   glEnable(GL_DEPTH_TEST);
 
-  // cube
-  glBindVertexArray(VAO);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO); // ram -> vram
+  // === register callbacks ==
+  // register callback to run  when screen resizes
+  glfwSetFramebufferSizeCallback(w, onResizeScreen);
+  glfwSetCursorPosCallback(w, mouse_callback);
+
+  // === compile and link shaders ==
+  GLuint cube_vert_shader  = initVShader(CUBE_VSHADER);
+  GLuint cube_frag_shader  = initFShader(CUBE_FSHADER);
+  GLuint light_frag_shader = initFShader(LIGHT_CUBE_FSHADER);
+  if (!shaderIsValid(cube_vert_shader) || !shaderIsValid(cube_frag_shader))
+    goto clean;
+  GLuint cube_shader  = linkShaders(cube_vert_shader, cube_frag_shader);
+  GLuint light_shader = linkShaders(cube_vert_shader, light_frag_shader);
+  if (!shaderProgramIsValid(cube_shader)) goto clean;
+  glDeleteShader(cube_vert_shader);
+  glDeleteShader(cube_frag_shader);
+  glDeleteShader(light_frag_shader);
+
+  // locations for uniform vars
+  GLuint cube_model_loc  = glGetUniformLocation(cube_shader, "m");
+  GLuint cube_view_loc   = glGetUniformLocation(cube_shader, "v");
+  GLuint cube_proj_loc   = glGetUniformLocation(cube_shader, "p");
+  GLuint cube_object_loc = glGetUniformLocation(cube_shader, "objectColor");
+  GLuint cube_light_loc  = glGetUniformLocation(cube_shader, "lightColor");
+  GLuint light_model_loc = glGetUniformLocation(light_shader, "m");
+  GLuint light_view_loc  = glGetUniformLocation(light_shader, "v");
+  GLuint light_proj_loc  = glGetUniformLocation(light_shader, "p");
+
+  // === setup gl objects ===
+  // copy vertices to vram
+  GLuint VBO; // vertex buffer object
+  glGenBuffers(1, &VBO);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO); // set VBO as currently active
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  // cube
+  GLuint cube_VAO; // vertex array object
+  glGenVertexArrays(1, &cube_VAO);
+  glBindVertexArray(cube_VAO);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_stride, vertex_offset);
   glEnableVertexAttribArray(0);
-  // cube
+  // light cube
+  GLuint light_VAO; // vertex array object
+  glGenVertexArrays(1, &light_VAO);
   glBindVertexArray(light_VAO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO); // ram -> vram
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_stride, vertex_offset);
   glEnableVertexAttribArray(0);
 
-  // activate texture
-
-  // tell opengl which texture unit each shader sampler belongs to
-  glUseProgram(cube_shader);
-
   // == we setup global game state ===
+  vec3 lightPos   = {1.2, 1, -2.0};
   GameState state = defaultGameState();
 
-  // model view projection matrices
-  mat4 m = GLM_MAT4_IDENTITY;
-  mat4 v = GLM_MAT4_IDENTITY;
-  mat4 p = GLM_MAT4_IDENTITY;
-  glm_rotate(m, glm_rad(-55.0f), (vec3){1, 0, 0});
-  cameraLookAt(&state.camera, v);
-  glm_perspective(glm_rad(45.0), W / H, 0.1, 100.0, p);
+  // === mvp setup begin ===
+  mat4 cube_m  = GLM_MAT4_IDENTITY; // cube model
+  mat4 light_m = GLM_MAT4_IDENTITY; // light cube model
+  mat4 v       = GLM_MAT4_IDENTITY; // view
+  mat4 p       = GLM_MAT4_IDENTITY; // projection
 
-  GLuint ml = glGetUniformLocation(cube_shader, "model");
-  GLuint vl = glGetUniformLocation(cube_shader, "view");
-  GLuint pl = glGetUniformLocation(cube_shader, "projection");
-  GLuint ol = glGetUniformLocation(cube_shader, "objectColor");
-  GLuint ll = glGetUniformLocation(cube_shader, "lightColor");
+  // first set mvp for light cube
+  glm_translate(light_m, lightPos);                                   // build m
+  glm_mat4_scale(light_m, 0.1);                                       // build m
+  cameraLookAt(&state.camera, v);                                     // set v
+  glm_perspective(glm_rad(45.0), (float)W / (float)H, 0.1, 100.0, p); // set p
 
-  glUniformMatrix4fv(ml, 1, GL_FALSE, (float*)m);
-  glUniformMatrix4fv(vl, 1, GL_FALSE, (float*)v);
-  glUniformMatrix4fv(pl, 1, GL_FALSE, (float*)p);
-  glUniform3fv(ol, 1, (vec3){1.0, 0.5, 0.31});
-  glUniform3fv(ll, 1, (vec3){1.0, 1.0, 1.0});
+  // then set mvp for ordinary cube
+  // here we do nothing...
 
   // we make game state available from everywhere
   glfwSetWindowUserPointer(w, &state);
 
   // === Application loop ==
   while (!glfwWindowShouldClose(w)) {
-    // update
-    updateFrameTime(&state.frame_t, glfwGetTime());
+    // === update ===
+    updateFrameTime(&state.frame_t, glfwGetTime()); // update frame time
+    handleInput(w, &state);                         // handle input
+    cameraLookAt(&state.camera, v);                 // update view matrix
+    glm_perspective(glm_rad(45.0), (float)W / (float)H, 0.1, 100.0, p);
 
-    // handle input
-    handleInput(w, &state);
-
-    // draw
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    // === draw ===
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // activate the program for use
+    // cube
     glUseProgram(cube_shader);
+    glUniformMatrix4fv(cube_model_loc, 1, GL_FALSE, (float*)cube_m);
+    glUniformMatrix4fv(cube_view_loc, 1, GL_FALSE, (float*)v);
+    glUniformMatrix4fv(cube_proj_loc, 1, GL_FALSE, (float*)p);
+    glUniform3fv(cube_object_loc, 1, (vec3){1.0, 0.5, 0.31});
+    glUniform3fv(cube_light_loc, 1, (vec3){1.0, 1.0, 1.0});
+    glBindVertexArray(cube_VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 36); // draw it
+    // light
+    glUseProgram(light_shader);
+    glUniformMatrix4fv(light_model_loc, 1, GL_FALSE, (float*)light_m);
+    glUniformMatrix4fv(light_view_loc, 1, GL_FALSE, (float*)v);
+    glUniformMatrix4fv(light_proj_loc, 1, GL_FALSE, (float*)p);
+    glBindVertexArray(light_VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 36); // draw it
 
-    glBindVertexArray(VAO);
-    cameraLookAt(&state.camera, v);
-    glUniformMatrix4fv(vl, 1, GL_FALSE, (float*)v);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-
+    // glfw: swap buffers
     glfwSwapBuffers(w); // swap buffer
     glfwPollEvents();   // poll for more events
   }

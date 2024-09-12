@@ -8,7 +8,7 @@
 /// prints the open gl version
 void printGlVer(int v) { printf("Loaded OpenGL %d.%d\n", GLMA(v), GLMI(v)); }
 
-GLFWwindow* initAndCreateWindow(void) {
+GLFWwindow* initAndCreateWindow(int w, int h, char* title) {
   if (!glfwInit()) return NULL;
 
   // set some parameters
@@ -16,7 +16,7 @@ GLFWwindow* initAndCreateWindow(void) {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  GLFWwindow* window = glfwCreateWindow(W, H, WT, NULL, NULL);
+  GLFWwindow* window = glfwCreateWindow(w, h, title, NULL, NULL);
   if (!window) return NULL;
 
   // set the context to current context
@@ -25,7 +25,7 @@ GLFWwindow* initAndCreateWindow(void) {
   int version = gladLoadGL(glfwGetProcAddress);
   if (version == 0) return NULL;
 
-  glViewport(0, 0, W, H);
+  glViewport(0, 0, w, h);
 
   printGlVer(version);
 

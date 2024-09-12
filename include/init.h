@@ -4,10 +4,8 @@
 #include "glad/gl.h"
 #include <GLFW/glfw3.h>
 
-#define H 480
-#define W 640
-#define WT "Hello World"
 
-GLFWwindow* initAndCreateWindow(void);
+GLFWwindow* initAndCreateWindow(int w, int h, char* title);
+
 
 #endif
