@@ -67,6 +67,8 @@ void moveCameraRight(Camera* c, float speed) {
   glm_vec3_scale(c->right, speed, direction);
   glm_vec3_sub(c->pos, direction, c->pos);
 }
+void moveCameraUp(Camera* c, float speed) { c->pos[1] += speed; }
+void moveCameraDown(Camera* c, float speed) { c->pos[1] -= speed; }
 
 typedef struct {
   float x;
@@ -208,6 +210,8 @@ void handleInput(GLFWwindow* w, GameState* s) {
   if (keyPressed(DOWN)) moveCameraBackward(&s->camera, 2.5f * dt);
   if (keyPressed(LEFT)) moveCameraLeft(&s->camera, 2.5f * dt);
   if (keyPressed(RIGHT)) moveCameraRight(&s->camera, 2.5f * dt);
+  if (keyPressed(PAGE_UP)) moveCameraUp(&s->camera, 2.5f * dt);
+  if (keyPressed(PAGE_DOWN)) moveCameraDown(&s->camera, 2.5f * dt);
 }
 
 bool firstMouse = true;
