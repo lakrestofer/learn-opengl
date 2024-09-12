@@ -6,7 +6,6 @@
 #include <cglm/mat4.h>
 #include <cglm/vec3.h>
 #include <stdbool.h>
-#include <string.h>
 // local dependencies
 #include "init.h"
 #include "shaders/utils.h"
@@ -356,23 +355,7 @@ int main(void) {
   glEnableVertexAttribArray(0);
 
   // == we setup global game state ===
-  vec3 lightPos   = {1.2, 1, -2.0};
   GameState state = defaultGameState();
-
-  // === mvp setup begin ===
-  mat4 cube_m  = GLM_MAT4_IDENTITY; // cube model
-  mat4 light_m = GLM_MAT4_IDENTITY; // light cube model
-  mat4 v       = GLM_MAT4_IDENTITY; // view
-  mat4 p       = GLM_MAT4_IDENTITY; // projection
-
-  // first set mvp for light cube
-  glm_translate(light_m, lightPos);                                   // build m
-  glm_mat4_scale(light_m, 0.1);                                       // build m
-  cameraLookAt(&state.camera, v);                                     // set v
-  glm_perspective(glm_rad(45.0), (float)W / (float)H, 0.1, 100.0, p); // set p
-
-  // then set mvp for ordinary cube
-  // here we do nothing...
 
   // we make game state available from everywhere
   glfwSetWindowUserPointer(w, &state);
@@ -382,9 +365,24 @@ int main(void) {
   // === Application loop ==
   while (!glfwWindowShouldClose(w)) {
     // === update ===
-    updateFrameTime(&state.frame_t, glfwGetTime()); // update frame time
-    handleInput(w, &state);                         // handle input
-    cameraLookAt(&state.camera, v);                 // update view matrix
+    float time = glfwGetTime();
+    updateFrameTime(&state.frame_t, time); // update frame time
+
+    // === mvp setup begin ===
+    mat4 cube_m   = GLM_MAT4_IDENTITY; // cube model
+    mat4 light_m  = GLM_MAT4_IDENTITY; // light cube model
+    mat4 v        = GLM_MAT4_IDENTITY; // view
+    mat4 p        = GLM_MAT4_IDENTITY; // projection
+    vec3 lightPos = {2 * cos(time), 2 * sin(time), -2.0};
+
+    // mvp for light (mvp for cube is static)
+    glm_mat4_scale(light_m, 0.1);     // build m
+    glm_translate(light_m, lightPos); // build m
+    cameraLookAt(&state.camera, v);   // set v
+    glm_perspective(glm_rad(45.0), (float)W / (float)H, 0.1, 100.0, p); // set p
+
+    handleInput(w, &state);         // handle input
+    cameraLookAt(&state.camera, v); // update view matrix
     glm_perspective(glm_rad(45.0), (float)W / (float)H, 0.1, 100.0, p);
 
     // === draw ===
