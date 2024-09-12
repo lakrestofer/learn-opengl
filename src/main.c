@@ -126,72 +126,114 @@ void onResizeScreen(GLFWwindow* _, int width, int height) {
 
 // clang-format off
 float vertices[] = {
-    -0.5f, -0.5f, -0.5f,
-     0.5f, -0.5f, -0.5f,
-     0.5f,  0.5f, -0.5f,
-     0.5f,  0.5f, -0.5f,
-    -0.5f,  0.5f, -0.5f,
-    -0.5f, -0.5f, -0.5f,
+    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+    -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
 
-    -0.5f, -0.5f,  0.5f,
-     0.5f, -0.5f,  0.5f,
-     0.5f,  0.5f,  0.5f,
-     0.5f,  0.5f,  0.5f,
-    -0.5f,  0.5f,  0.5f,
-    -0.5f, -0.5f,  0.5f,
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
 
-    -0.5f,  0.5f,  0.5f,
-    -0.5f,  0.5f, -0.5f,
-    -0.5f, -0.5f, -0.5f,
-    -0.5f, -0.5f, -0.5f,
-    -0.5f, -0.5f,  0.5f,
-    -0.5f,  0.5f,  0.5f,
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
 
-     0.5f,  0.5f,  0.5f,
-     0.5f,  0.5f, -0.5f,
-     0.5f, -0.5f, -0.5f,
-     0.5f, -0.5f, -0.5f,
-     0.5f, -0.5f,  0.5f,
-     0.5f,  0.5f,  0.5f,
+     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-    -0.5f, -0.5f, -0.5f,
-     0.5f, -0.5f, -0.5f,
-     0.5f, -0.5f,  0.5f,
-     0.5f, -0.5f,  0.5f,
-    -0.5f, -0.5f,  0.5f,
-    -0.5f, -0.5f, -0.5f,
+    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 
-    -0.5f,  0.5f, -0.5f,
-     0.5f,  0.5f, -0.5f,
-     0.5f,  0.5f,  0.5f,
-     0.5f,  0.5f,  0.5f,
-    -0.5f,  0.5f,  0.5f,
-    -0.5f,  0.5f, -0.5f
-};
-const int vertex_stride =  (3 * sizeof(float));
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+};const int vertex_stride =  (6 * sizeof(float));
 const void* vertex_offset = (void*) 0;
+const void* normal_offset = (void*) (3 * sizeof(float));
 // does no transformation on the vertices
 const char* CUBE_VSHADER = GLSL(
-    layout (location = 0) in vec3 aPos;
+  layout (location = 0) in vec3 aPos;
+  layout (location = 1) in vec3 aNormal;
 
-    uniform mat4 m;
-    uniform mat4 v;
-    uniform mat4 p;
-   
-    void main() {
-        gl_Position = p * v * m * vec4(aPos, 1.0);
-    }
+  out vec3 FragPos;
+  out vec3 Normal;
+
+  uniform mat4 model;
+  uniform mat4 view;
+  uniform mat4 projection;
+
+  void main() {
+      FragPos = vec3(model * vec4(aPos, 1.0));
+      Normal = mat3(transpose(inverse(model))) * aNormal;  
+    
+      gl_Position = projection * view * vec4(FragPos, 1.0);
+  }
 );
 // colors each pixel within the triangle red
 const char* CUBE_FSHADER = GLSL(
   out vec4 FragColor;
-  uniform vec3 objectColor;
+
+  in vec3 Normal;  
+  in vec3 FragPos;  
+  
+  uniform vec3 lightPos; 
   uniform vec3 lightColor;
+  uniform vec3 objectColor;
+  uniform vec3 viewPos;
+
   void main() {
-      FragColor = vec4(lightColor * objectColor, 1.0);
+    // ambient
+    float ambientStrength = 0.1;
+    vec3 ambient = ambientStrength * lightColor;
+	
+    // diffuse 
+    vec3 norm = normalize(Normal);
+    vec3 lightDir = normalize(lightPos - FragPos);
+    float diff = max(dot(norm, lightDir), 0);
+    vec3 diffuse = diff * lightColor;
+
+    float specularStrength = 0.5;
+    vec3 viewDir = normalize(viewPos - FragPos);
+    vec3 reflectDir = reflect(-lightDir, norm);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 8);
+    vec3 specular = specularStrength * spec * lightColor;
+          
+    vec3 result = (ambient + diffuse + specular) * objectColor;
+    FragColor = vec4(result, 1.0);
   }
 );
-const char* LIGHT_CUBE_FSHADER = GLSL(
+const char* LIGHT_VSHADER = GLSL(
+  layout (location = 0) in vec3 aPos;
+
+  uniform mat4 model;
+  uniform mat4 view;
+  uniform mat4 projection;
+
+  void main() {
+  	gl_Position = projection * view * model * vec4(aPos, 1.0);
+  }
+);
+const char* LIGHT_FSHADER = GLSL(
   out vec4 FragColor;
   void main() {
       FragColor = vec4(1.0);
@@ -261,25 +303,34 @@ int main(void) {
   // === compile and link shaders ==
   GLuint cube_vert_shader  = initVShader(CUBE_VSHADER);
   GLuint cube_frag_shader  = initFShader(CUBE_FSHADER);
-  GLuint light_frag_shader = initFShader(LIGHT_CUBE_FSHADER);
+  GLuint light_vert_shader = initVShader(LIGHT_VSHADER);
+  GLuint light_frag_shader = initFShader(LIGHT_FSHADER);
   if (!shaderIsValid(cube_vert_shader) || !shaderIsValid(cube_frag_shader))
     goto clean;
   GLuint cube_shader  = linkShaders(cube_vert_shader, cube_frag_shader);
-  GLuint light_shader = linkShaders(cube_vert_shader, light_frag_shader);
+  GLuint light_shader = linkShaders(light_vert_shader, light_frag_shader);
   if (!shaderProgramIsValid(cube_shader)) goto clean;
   glDeleteShader(cube_vert_shader);
   glDeleteShader(cube_frag_shader);
   glDeleteShader(light_frag_shader);
 
   // locations for uniform vars
-  GLuint cube_model_loc  = glGetUniformLocation(cube_shader, "m");
-  GLuint cube_view_loc   = glGetUniformLocation(cube_shader, "v");
-  GLuint cube_proj_loc   = glGetUniformLocation(cube_shader, "p");
-  GLuint cube_object_loc = glGetUniformLocation(cube_shader, "objectColor");
-  GLuint cube_light_loc  = glGetUniformLocation(cube_shader, "lightColor");
-  GLuint light_model_loc = glGetUniformLocation(light_shader, "m");
-  GLuint light_view_loc  = glGetUniformLocation(light_shader, "v");
-  GLuint light_proj_loc  = glGetUniformLocation(light_shader, "p");
+  GLuint cube_model_loc   = glGetUniformLocation(cube_shader, "model");
+  GLuint cube_view_loc    = glGetUniformLocation(cube_shader, "view");
+  GLuint cube_proj_loc    = glGetUniformLocation(cube_shader, "projection");
+  GLuint cube_viewp_loc   = glGetUniformLocation(cube_shader, "viewPos");
+  GLuint cube_lightp_loc  = glGetUniformLocation(cube_shader, "lightPos");
+  GLuint cube_lightc_loc  = glGetUniformLocation(cube_shader, "lightColor");
+  GLuint cube_objectc_loc = glGetUniformLocation(cube_shader, "objectColor");
+  GLuint light_model_loc  = glGetUniformLocation(light_shader, "model");
+  GLuint light_view_loc   = glGetUniformLocation(light_shader, "view");
+  GLuint light_proj_loc   = glGetUniformLocation(light_shader, "projection");
+
+  if (!(!cube_model_loc || !cube_view_loc || !cube_proj_loc ||
+        !cube_viewp_loc || !cube_lightp_loc || !cube_lightc_loc ||
+        !cube_objectc_loc || !light_model_loc || !light_view_loc ||
+        !light_proj_loc))
+    goto clean;
 
   // === setup gl objects ===
   // copy vertices to vram
@@ -294,6 +345,8 @@ int main(void) {
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_stride, vertex_offset);
   glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_stride, normal_offset);
+  glEnableVertexAttribArray(1);
   // light cube
   GLuint light_VAO; // vertex array object
   glGenVertexArrays(1, &light_VAO);
@@ -324,6 +377,8 @@ int main(void) {
   // we make game state available from everywhere
   glfwSetWindowUserPointer(w, &state);
 
+  // === send static data to the gpu ===
+
   // === Application loop ==
   while (!glfwWindowShouldClose(w)) {
     // === update ===
@@ -341,8 +396,10 @@ int main(void) {
     glUniformMatrix4fv(cube_model_loc, 1, GL_FALSE, (float*)cube_m);
     glUniformMatrix4fv(cube_view_loc, 1, GL_FALSE, (float*)v);
     glUniformMatrix4fv(cube_proj_loc, 1, GL_FALSE, (float*)p);
-    glUniform3fv(cube_object_loc, 1, (vec3){1.0, 0.5, 0.31});
-    glUniform3fv(cube_light_loc, 1, (vec3){1.0, 1.0, 1.0});
+    glUniform3fv(cube_objectc_loc, 1, (vec3){1.0, 0.5, 0.31});
+    glUniform3fv(cube_lightc_loc, 1, (vec3){1.0, 1.0, 1.0});
+    glUniform3fv(cube_lightp_loc, 1, lightPos);
+    glUniform3fv(cube_viewp_loc, 1, state.camera.pos);
     glBindVertexArray(cube_VAO);
     glDrawArrays(GL_TRIANGLES, 0, 36); // draw it
     // light
