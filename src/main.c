@@ -11,7 +11,6 @@
 #include "init.h"
 #include "shaders/utils.h"
 #include "shaders/shader.h"
-#include "textures/texture.h"
 #include "external/stb_image.h"
 
 #define H 480
@@ -21,10 +20,6 @@
 // some aliases for functions to make them shorter
 #define onScreenResize glfwSetFramebufferSizeCallback
 #define onCursorEvent glfwSetCursorPosCallback
-
-// and aliases for constants
-#define VSHADER GL_VERTEX_SHADER
-#define FSHADER GL_FRAGMENT_SHADER
 
 typedef struct {
   float yaw;
@@ -111,18 +106,6 @@ void onResizeScreen(GLFWwindow* _, int width, int height) {
 // === application code ===
 
 // clang-format off
-vec3 cubePositions[] = {
-    { 0.0f,  0.0f,  0.0f},
-    { 2.0f,  5.0f, -15.0f},
-    {-1.5f, -2.2f, -2.5f}, 
-    {-3.8f, -2.0f, -12.3f}, 
-    { 2.4f, -0.4f, -3.5f}, 
-    {-1.7f,  3.0f, -7.5f}, 
-    { 1.3f, -2.0f, -2.5f}, 
-    { 1.5f,  2.0f, -2.5f},
-    { 1.5f,  0.2f, -1.5f},
-    {-1.3f,  1.0f, -1.5f} 
-};
 float vertices[] = {
     -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
      0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
@@ -166,31 +149,36 @@ float vertices[] = {
     -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
     -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 };
+const int vertex_stride =  (5 * sizeof(float));
+const void* vertex_offset = (void*) 0;
 // does no transformation on the vertices
-const char *VSS = GLSL(
+const char* CUBE_VSHADER = GLSL(
     layout (location = 0) in vec3 aPos;
-    layout (location = 1) in vec2 aTexCoord;
-
-    out vec2 TexCoord;
 
     uniform mat4 model;
     uniform mat4 view;
     uniform mat4 projection;
-
-    
+   
     void main() {
         gl_Position = projection * view * model * vec4(aPos, 1.0);
-        TexCoord = aTexCoord;
     }
 );
 // colors each pixel within the triangle red
-const char *FSS = GLSL(
-    out vec4 FragColor;
-    in vec2 TexCoord;
-    uniform sampler2D texture1;
-    void main() {
-        FragColor = texture(texture1, TexCoord);
-    }    
+const char* CUBE_FSHADER = GLSL(
+  out vec4 FragColor;
+  uniform vec3 objectColor;
+  uniform vec3 lightColor;
+  void main() {
+      FragColor = vec4(lightColor * objectColor, 1.0);
+  }
+);
+const char* LIGHT_CUBE_FSHADER = GLSL(
+  out vec4 FragColor;
+  uniform vec3 objectColor;
+  uniform vec3 lightColor;
+  void main() {
+      FragColor = vec4(lightColor * objectColor, 1.0);
+  }
 );
 // clang-format on
 
@@ -246,64 +234,70 @@ int main(void) {
   onCursorEvent(w, mouse_callback);
 
   // === compile and link shaders ==
-  GLuint shaders[2] = {initShader(VSHADER, VSS), initShader(FSHADER, FSS)};
-  if (!shaderIsValid(shaders[0]) || !shaderIsValid(shaders[1])) goto clean;
-  GLuint shader = linkShaders(shaders, 2);
-  if (!shaderProgramIsValid(shader)) goto clean;
-  for (int i = 0; i < 2; i++) glDeleteShader(shaders[i]);
+  GLuint cvs = initVShader(CUBE_VSHADER);
+  GLuint cfs = initFShader(CUBE_FSHADER);
+  GLuint lcfs = initFShader(LIGHT_CUBE_FSHADER);
+  if (!shaderIsValid(cvs) || !shaderIsValid(cfs)) goto clean;
+  GLuint cube_shader = linkShaders(cvs, cfs);
+  GLuint light_cube_shader = linkShaders(cvs, lcfs);
+  if (!shaderProgramIsValid(cube_shader)) goto clean;
+  glDeleteShader(cvs);
+  glDeleteShader(cfs);
+  glDeleteShader(lcfs);
 
   // === load textures ===
-  GLuint texture1 = createTexture("container.jpg", JPG);
 
   // === setup gl objects ===
-  GLuint VAO; // vertex array object
-  GLuint VBO; // vertex buffer object
+  GLuint light_VAO; // vertex array object
+  GLuint VAO;       // vertex array object
+  GLuint VBO;       // vertex buffer object
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
+  glGenVertexArrays(1, &light_VAO);
 
   // enable some gl settings
   glEnable(GL_DEPTH_TEST);
 
-  // setup how to interpret the buffer data
+  // cube
   glBindVertexArray(VAO);
-  glBindTexture(GL_TEXTURE_2D, texture1);
   glBindBuffer(GL_ARRAY_BUFFER, VBO); // ram -> vram
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-  // set vertex attribute pointers
-  // position attribute
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_stride, vertex_offset);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(
-      1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))
-  );
-  glEnableVertexAttribArray(1);
+  // cube
+  glBindVertexArray(light_VAO);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO); // ram -> vram
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_stride, vertex_offset);
+  glEnableVertexAttribArray(0);
 
   // activate texture
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, texture1);
 
   // tell opengl which texture unit each shader sampler belongs to
-  glUseProgram(shader);
-  glUniform1i(glGetUniformLocation(shader, "texture1"), 0);
+  glUseProgram(cube_shader);
 
   // == we setup global game state ===
   GameState state = defaultGameState();
 
   // model view projection matrices
-  mat4 model = GLM_MAT4_IDENTITY;
-  mat4 view = GLM_MAT4_IDENTITY;
-  mat4 projection = GLM_MAT4_IDENTITY;
-  glm_rotate(model, glm_rad(-55.0f), (vec3){1, 0, 0});
-  cameraLookAt(&state.camera, view);
-  glm_perspective(glm_rad(45.0), W / H, 0.1, 100.0, projection);
+  mat4 m = GLM_MAT4_IDENTITY;
+  mat4 v = GLM_MAT4_IDENTITY;
+  mat4 p = GLM_MAT4_IDENTITY;
+  glm_rotate(m, glm_rad(-55.0f), (vec3){1, 0, 0});
+  cameraLookAt(&state.camera, v);
+  glm_perspective(glm_rad(45.0), W / H, 0.1, 100.0, p);
 
-  GLuint modelLoc = glGetUniformLocation(shader, "model");
-  GLuint viewLoc = glGetUniformLocation(shader, "view");
-  GLuint projectionLoc = glGetUniformLocation(shader, "projection");
+  GLuint ml = glGetUniformLocation(cube_shader, "model");
+  GLuint vl = glGetUniformLocation(cube_shader, "view");
+  GLuint pl = glGetUniformLocation(cube_shader, "projection");
+  GLuint ol = glGetUniformLocation(cube_shader, "objectColor");
+  GLuint ll = glGetUniformLocation(cube_shader, "lightColor");
 
-  glUniformMatrix4fv(modelLoc, 1, GL_FALSE, (float*)model);
-  glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (float*)view);
-  glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (float*)projection);
+  glUniformMatrix4fv(ml, 1, GL_FALSE, (float*)m);
+  glUniformMatrix4fv(vl, 1, GL_FALSE, (float*)v);
+  glUniformMatrix4fv(pl, 1, GL_FALSE, (float*)p);
+  glUniform3fv(ol, 1, (vec3){1.0, 0.5, 0.31});
+  glUniform3fv(ll, 1, (vec3){1.0, 1.0, 1.0});
 
   // we make game state available from everywhere
   glfwSetWindowUserPointer(w, &state);
@@ -321,20 +315,12 @@ int main(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // activate the program for use
-    glUseProgram(shader);
+    glUseProgram(cube_shader);
 
     glBindVertexArray(VAO);
-    cameraLookAt(&state.camera, view); // update view matrix from camera
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (float*)view);
-
-    for (int i = 0; i < 10; i++) {
-      float angle = 20.0f * i;
-      mat4 localModel = GLM_MAT4_IDENTITY;
-      glm_translate(localModel, cubePositions[i]);
-      glm_rotate(model, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
-      glUniformMatrix4fv(modelLoc, 1, GL_FALSE, (float*)localModel);
-      glDrawArrays(GL_TRIANGLES, 0, 36);
-    }
+    cameraLookAt(&state.camera, v);
+    glUniformMatrix4fv(vl, 1, GL_FALSE, (float*)v);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
 
     glfwSwapBuffers(w); // swap buffer
     glfwPollEvents();   // poll for more events

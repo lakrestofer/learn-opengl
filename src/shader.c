@@ -20,9 +20,10 @@ bool shaderIsValid(GLuint shader) {
   return true;
 }
 
-GLuint linkShaders(GLuint* shaders, int n) {
+GLuint linkShaders(GLuint v_shader, GLuint f_shader) {
   GLuint program = glCreateProgram();
-  for (int i = 0; i < n; i++) glAttachShader(program, shaders[i]);
+  glAttachShader(program, v_shader);
+  glAttachShader(program, f_shader);
   glLinkProgram(program);
   return program;
 }
