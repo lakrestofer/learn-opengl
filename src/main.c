@@ -17,6 +17,9 @@ int W    = 640;
 char* WT = "Hello World";
 vec3 UP  = {0, 1, 0};
 
+// aliases
+#define shaderVar glGetUniformLocation
+
 typedef struct {
   float yaw;
   float pitch;
@@ -190,34 +193,46 @@ const char* CUBE_VSHADER = GLSL(
 );
 // colors each pixel within the triangle red
 const char* CUBE_FSHADER = GLSL(
+  struct Material {
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    float shine;
+  };
+
+  struct Light {
+    vec3 position;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+  };
+
   out vec4 FragColor;
 
   in vec3 Normal;  
   in vec3 FragPos;  
-  
-  uniform vec3 lightPos; 
-  uniform vec3 lightColor;
-  uniform vec3 objectColor;
+
+  uniform Material material;
+  uniform Light light;
   uniform vec3 viewPos;
 
   void main() {
     // ambient
-    float ambientStrength = 0.1;
-    vec3 ambient = ambientStrength * lightColor;
+    vec3 ambient = light.ambient * material.ambient;
 	
     // diffuse 
     vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(lightPos - FragPos);
+    vec3 lightDir = normalize(light.position - FragPos);
     float diff = max(dot(norm, lightDir), 0);
-    vec3 diffuse = diff * lightColor;
+    vec3 diffuse = light.diffuse * (diff * material.diffuse);
 
-    float specularStrength = 0.5;
+    // specular
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 8);
-    vec3 specular = specularStrength * spec * lightColor;
+    vec3 specular = light.specular * (material.specular * spec);
           
-    vec3 result = (ambient + diffuse + specular) * objectColor;
+    vec3 result = (ambient + diffuse + specular);
     FragColor = vec4(result, 1.0);
   }
 );
@@ -306,30 +321,29 @@ int main(void) {
   GLuint light_frag_shader = initFShader(LIGHT_FSHADER);
   if (!shaderIsValid(cube_vert_shader) || !shaderIsValid(cube_frag_shader))
     goto clean;
-  GLuint cube_shader  = linkShaders(cube_vert_shader, cube_frag_shader);
+  GLuint c_shader     = linkShaders(cube_vert_shader, cube_frag_shader);
   GLuint light_shader = linkShaders(light_vert_shader, light_frag_shader);
-  if (!shaderProgramIsValid(cube_shader)) goto clean;
+  if (!shaderProgramIsValid(c_shader)) goto clean;
   glDeleteShader(cube_vert_shader);
   glDeleteShader(cube_frag_shader);
   glDeleteShader(light_frag_shader);
 
   // locations for uniform vars
-  GLuint cube_model_loc   = glGetUniformLocation(cube_shader, "model");
-  GLuint cube_view_loc    = glGetUniformLocation(cube_shader, "view");
-  GLuint cube_proj_loc    = glGetUniformLocation(cube_shader, "projection");
-  GLuint cube_viewp_loc   = glGetUniformLocation(cube_shader, "viewPos");
-  GLuint cube_lightp_loc  = glGetUniformLocation(cube_shader, "lightPos");
-  GLuint cube_lightc_loc  = glGetUniformLocation(cube_shader, "lightColor");
-  GLuint cube_objectc_loc = glGetUniformLocation(cube_shader, "objectColor");
-  GLuint light_model_loc  = glGetUniformLocation(light_shader, "model");
-  GLuint light_view_loc   = glGetUniformLocation(light_shader, "view");
-  GLuint light_proj_loc   = glGetUniformLocation(light_shader, "projection");
-
-  if (!(!cube_model_loc || !cube_view_loc || !cube_proj_loc ||
-        !cube_viewp_loc || !cube_lightp_loc || !cube_lightc_loc ||
-        !cube_objectc_loc || !light_model_loc || !light_view_loc ||
-        !light_proj_loc))
-    goto clean;
+  GLuint cube_model_loc             = shaderVar(c_shader, "model");
+  GLuint cube_view_loc              = shaderVar(c_shader, "view");
+  GLuint cube_proj_loc              = shaderVar(c_shader, "projection");
+  GLuint cube_view_pos_loc          = shaderVar(c_shader, "viewPos");
+  GLuint cube_material_ambient_loc  = shaderVar(c_shader, "material.ambient");
+  GLuint cube_material_diffuse_loc  = shaderVar(c_shader, "material.diffuse");
+  GLuint cube_material_specular_loc = shaderVar(c_shader, "material.specular");
+  GLuint cube_material_shine_loc    = shaderVar(c_shader, "material.shine");
+  GLuint cube_light_position_loc    = shaderVar(c_shader, "light.position");
+  GLuint cube_light_ambient_loc     = shaderVar(c_shader, "light.ambient");
+  GLuint cube_light_diffuse_loc     = shaderVar(c_shader, "light.diffuse");
+  GLuint cube_light_specular_loc    = shaderVar(c_shader, "light.specular");
+  GLuint light_model_loc            = shaderVar(light_shader, "model");
+  GLuint light_view_loc             = shaderVar(light_shader, "view");
+  GLuint light_proj_loc             = shaderVar(light_shader, "projection");
 
   // === setup gl objects ===
   // copy vertices to vram
@@ -369,16 +383,16 @@ int main(void) {
     updateFrameTime(&state.frame_t, time); // update frame time
 
     // === mvp setup begin ===
-    mat4 cube_m   = GLM_MAT4_IDENTITY; // cube model
-    mat4 light_m  = GLM_MAT4_IDENTITY; // light cube model
-    mat4 v        = GLM_MAT4_IDENTITY; // view
-    mat4 p        = GLM_MAT4_IDENTITY; // projection
-    vec3 lightPos = {2 * cos(time), 2 * sin(time), -2.0};
+    mat4 cube_m    = GLM_MAT4_IDENTITY; // cube model
+    mat4 light_m   = GLM_MAT4_IDENTITY; // light cube model
+    mat4 v         = GLM_MAT4_IDENTITY; // view
+    mat4 p         = GLM_MAT4_IDENTITY; // projection
+    vec3 light_pos = {2 * cos(time), 2 * sin(time), -2.0};
 
     // mvp for light (mvp for cube is static)
-    glm_mat4_scale(light_m, 0.1);     // build m
-    glm_translate(light_m, lightPos); // build m
-    cameraLookAt(&state.camera, v);   // set v
+    glm_mat4_scale(light_m, 0.1);      // build m
+    glm_translate(light_m, light_pos); // build m
+    cameraLookAt(&state.camera, v);    // set v
     glm_perspective(glm_rad(45.0), (float)W / (float)H, 0.1, 100.0, p); // set p
 
     handleInput(w, &state);         // handle input
@@ -390,14 +404,19 @@ int main(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // cube
-    glUseProgram(cube_shader);
+    glUseProgram(c_shader);
     glUniformMatrix4fv(cube_model_loc, 1, GL_FALSE, (float*)cube_m);
     glUniformMatrix4fv(cube_view_loc, 1, GL_FALSE, (float*)v);
     glUniformMatrix4fv(cube_proj_loc, 1, GL_FALSE, (float*)p);
-    glUniform3fv(cube_objectc_loc, 1, (vec3){1.0, 0.5, 0.31});
-    glUniform3fv(cube_lightc_loc, 1, (vec3){1.0, 1.0, 1.0});
-    glUniform3fv(cube_lightp_loc, 1, lightPos);
-    glUniform3fv(cube_viewp_loc, 1, state.camera.pos);
+    glUniform3fv(cube_view_pos_loc, 1, state.camera.pos);
+    glUniform3fv(cube_material_ambient_loc, 1, (vec3){1, 0.5, 0.31});
+    glUniform3fv(cube_material_diffuse_loc, 1, (vec3){1, 0.5, 0.31});
+    glUniform3fv(cube_material_specular_loc, 1, (vec3){0.5, 0.5, 0.5});
+    glUniform1f(cube_material_shine_loc, 32);
+    glUniform3fv(cube_light_position_loc, 1, light_pos);
+    glUniform3fv(cube_light_ambient_loc, 1, (vec3){0.2, 0.2, 0.2});
+    glUniform3fv(cube_light_diffuse_loc, 1, (vec3){0.5, 0.5, 0.5});
+    glUniform3fv(cube_light_specular_loc, 1, (vec3){1, 1, 1});
     glBindVertexArray(cube_VAO);
     glDrawArrays(GL_TRIANGLES, 0, 36); // draw it
     // light
