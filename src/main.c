@@ -202,7 +202,7 @@ const char* CUBE_VSHADER = GLSL(
 const char* CUBE_FSHADER = GLSL(
   struct Material {
     sampler2D diffuse;
-    vec3 specular;
+    sampler2D specular;
     float shine;
   };
 
@@ -237,10 +237,9 @@ const char* CUBE_FSHADER = GLSL(
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 8);
-    vec3 specular = light.specular * (material.specular * spec);
-          
-    vec3 result = (ambient + diffuse + specular);
-    FragColor = vec4(result, 1.0);
+    vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));          
+
+    FragColor = vec4(ambient + diffuse + specular, 1.0);
   }
 );
 const char* LIGHT_VSHADER = GLSL(
@@ -353,6 +352,8 @@ int main(void) {
 
   // === load textures ===
   GLuint container_texture = createTexture("container2.png", PNG);
+  GLuint container_texture_specular =
+      createTexture("container2_specular.png", PNG);
 
   // === setup gl objects ===
   // copy vertices to vram
@@ -420,7 +421,7 @@ int main(void) {
     glUniformMatrix4fv(cube_proj_loc, 1, GL_FALSE, (float*)p);
     glUniform3fv(cube_view_pos_loc, 1, state.camera.pos);
     glUniform1f(cube_material_diffuse_loc, 0);
-    glUniform3fv(cube_material_specular_loc, 1, (vec3){0.5, 0.5, 0.5});
+    glUniform1f(cube_material_specular_loc, 1);
     glUniform1f(cube_material_shine_loc, 32);
     glUniform3fv(cube_light_position_loc, 1, light_pos);
     glUniform3fv(cube_light_ambient_loc, 1, (vec3){0.2, 0.2, 0.2});
@@ -429,6 +430,8 @@ int main(void) {
     glBindVertexArray(cube_VAO);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, container_texture);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, container_texture_specular);
     glDrawArrays(GL_TRIANGLES, 0, 36); // draw it
     // light
     glUseProgram(light_shader);
