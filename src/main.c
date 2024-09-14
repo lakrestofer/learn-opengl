@@ -11,6 +11,7 @@
 #include "shaders/utils.h"
 #include "shaders/shader.h"
 #include "external/stb_image.h"
+#include "textures/texture.h"
 
 int H    = 480;
 int W    = 640;
@@ -128,57 +129,62 @@ void onResizeScreen(GLFWwindow* _, int width, int height) {
 
 // clang-format off
 float vertices[] = {
-    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-    -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+    // positions          // normals           // texture coords
+    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
 
-    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
 
-    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
 
-    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-     0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
-};const int vertex_stride =  (6 * sizeof(float));
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
+};
+const int stride =  (8 * sizeof(float));
 const void* vertex_offset = (void*) 0;
 const void* normal_offset = (void*) (3 * sizeof(float));
+const void* texture_coord_offset = (void*) (6 * sizeof(float));
 // does no transformation on the vertices
 const char* CUBE_VSHADER = GLSL(
   layout (location = 0) in vec3 aPos;
   layout (location = 1) in vec3 aNormal;
+  layout (location = 2) in vec2 aTexCoords;
 
   out vec3 FragPos;
   out vec3 Normal;
+  out vec2 TexCoords;
 
   uniform mat4 model;
   uniform mat4 view;
@@ -186,7 +192,8 @@ const char* CUBE_VSHADER = GLSL(
 
   void main() {
       FragPos = vec3(model * vec4(aPos, 1.0));
-      Normal = mat3(transpose(inverse(model))) * aNormal;  
+      Normal = mat3(transpose(inverse(model))) * aNormal;
+      TexCoords = aTexCoords;
     
       gl_Position = projection * view * vec4(FragPos, 1.0);
   }
@@ -194,8 +201,7 @@ const char* CUBE_VSHADER = GLSL(
 // colors each pixel within the triangle red
 const char* CUBE_FSHADER = GLSL(
   struct Material {
-    vec3 ambient;
-    vec3 diffuse;
+    sampler2D diffuse;
     vec3 specular;
     float shine;
   };
@@ -209,6 +215,7 @@ const char* CUBE_FSHADER = GLSL(
 
   out vec4 FragColor;
 
+  in vec2 TexCoords;
   in vec3 Normal;  
   in vec3 FragPos;  
 
@@ -218,13 +225,13 @@ const char* CUBE_FSHADER = GLSL(
 
   void main() {
     // ambient
-    vec3 ambient = light.ambient * material.ambient;
+    vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));
 	
     // diffuse 
     vec3 norm = normalize(Normal);
     vec3 lightDir = normalize(light.position - FragPos);
     float diff = max(dot(norm, lightDir), 0);
-    vec3 diffuse = light.diffuse * (diff * material.diffuse);
+    vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));  
 
     // specular
     vec3 viewDir = normalize(viewPos - FragPos);
@@ -333,7 +340,6 @@ int main(void) {
   GLuint cube_view_loc              = shaderVar(c_shader, "view");
   GLuint cube_proj_loc              = shaderVar(c_shader, "projection");
   GLuint cube_view_pos_loc          = shaderVar(c_shader, "viewPos");
-  GLuint cube_material_ambient_loc  = shaderVar(c_shader, "material.ambient");
   GLuint cube_material_diffuse_loc  = shaderVar(c_shader, "material.diffuse");
   GLuint cube_material_specular_loc = shaderVar(c_shader, "material.specular");
   GLuint cube_material_shine_loc    = shaderVar(c_shader, "material.shine");
@@ -344,6 +350,9 @@ int main(void) {
   GLuint light_model_loc            = shaderVar(light_shader, "model");
   GLuint light_view_loc             = shaderVar(light_shader, "view");
   GLuint light_proj_loc             = shaderVar(light_shader, "projection");
+
+  // === load textures ===
+  GLuint container_texture = createTexture("container2.png", PNG);
 
   // === setup gl objects ===
   // copy vertices to vram
@@ -356,16 +365,18 @@ int main(void) {
   glGenVertexArrays(1, &cube_VAO);
   glBindVertexArray(cube_VAO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_stride, vertex_offset);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, vertex_offset);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertex_stride, normal_offset);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, normal_offset);
   glEnableVertexAttribArray(1);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, texture_coord_offset);
+  glEnableVertexAttribArray(2);
   // light cube
   GLuint light_VAO; // vertex array object
   glGenVertexArrays(1, &light_VAO);
   glBindVertexArray(light_VAO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO); // ram -> vram
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_stride, vertex_offset);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, vertex_offset);
   glEnableVertexAttribArray(0);
 
   // == we setup global game state ===
@@ -393,7 +404,6 @@ int main(void) {
     glm_mat4_scale(light_m, 0.1);      // build m
     glm_translate(light_m, light_pos); // build m
     cameraLookAt(&state.camera, v);    // set v
-    glm_perspective(glm_rad(45.0), (float)W / (float)H, 0.1, 100.0, p); // set p
 
     handleInput(w, &state);         // handle input
     cameraLookAt(&state.camera, v); // update view matrix
@@ -409,8 +419,7 @@ int main(void) {
     glUniformMatrix4fv(cube_view_loc, 1, GL_FALSE, (float*)v);
     glUniformMatrix4fv(cube_proj_loc, 1, GL_FALSE, (float*)p);
     glUniform3fv(cube_view_pos_loc, 1, state.camera.pos);
-    glUniform3fv(cube_material_ambient_loc, 1, (vec3){1, 0.5, 0.31});
-    glUniform3fv(cube_material_diffuse_loc, 1, (vec3){1, 0.5, 0.31});
+    glUniform1f(cube_material_diffuse_loc, 0);
     glUniform3fv(cube_material_specular_loc, 1, (vec3){0.5, 0.5, 0.5});
     glUniform1f(cube_material_shine_loc, 32);
     glUniform3fv(cube_light_position_loc, 1, light_pos);
@@ -418,6 +427,8 @@ int main(void) {
     glUniform3fv(cube_light_diffuse_loc, 1, (vec3){0.5, 0.5, 0.5});
     glUniform3fv(cube_light_specular_loc, 1, (vec3){1, 1, 1});
     glBindVertexArray(cube_VAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, container_texture);
     glDrawArrays(GL_TRIANGLES, 0, 36); // draw it
     // light
     glUseProgram(light_shader);
