@@ -128,6 +128,18 @@ void onResizeScreen(GLFWwindow* _, int width, int height) {
 // === application code ===
 
 // clang-format off
+vec3 cubePositions[] = {
+    { 0.0f,  0.0f,  0.0f},
+    { 2.0f,  5.0f, -15.0f},
+    {-1.5f, -2.2f, -2.5f},
+    {-3.8f, -2.0f, -12.3f},
+    { 2.4f, -0.4f, -3.5f},
+    {-1.7f,  3.0f, -7.5f},
+    { 1.3f, -2.0f, -2.5f},
+    { 1.5f,  2.0f, -2.5f},
+    { 1.5f,  0.2f, -1.5f},
+    {-1.3f,  1.0f, -1.5}
+};
 float vertices[] = {
     // positions          // normals           // texture coords
     -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
@@ -208,6 +220,7 @@ const char* CUBE_FSHADER = GLSL(
 
   struct Light {
     vec3 position;
+    vec3 direction;
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
@@ -229,7 +242,7 @@ const char* CUBE_FSHADER = GLSL(
 	
     // diffuse 
     vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(light.position - FragPos);
+    vec3 lightDir = normalize(-light.direction);
     float diff = max(dot(norm, lightDir), 0);
     vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));  
 
@@ -343,6 +356,7 @@ int main(void) {
   GLuint cube_material_specular_loc = shaderVar(c_shader, "material.specular");
   GLuint cube_material_shine_loc    = shaderVar(c_shader, "material.shine");
   GLuint cube_light_position_loc    = shaderVar(c_shader, "light.position");
+  GLuint cube_light_direction_loc   = shaderVar(c_shader, "light.direction");
   GLuint cube_light_ambient_loc     = shaderVar(c_shader, "light.ambient");
   GLuint cube_light_diffuse_loc     = shaderVar(c_shader, "light.diffuse");
   GLuint cube_light_specular_loc    = shaderVar(c_shader, "light.specular");
@@ -386,28 +400,24 @@ int main(void) {
   // we make game state available from everywhere
   glfwSetWindowUserPointer(w, &state);
 
-  // === send static data to the gpu ===
+  // === mvp setup begin ===
 
+  mat4 cube_m    = GLM_MAT4_IDENTITY; // cube model
+  mat4 light_m   = GLM_MAT4_IDENTITY; // light cube model
+  mat4 v         = GLM_MAT4_IDENTITY; // view
+  mat4 p         = GLM_MAT4_IDENTITY; // projection
+  vec3 light_pos = {-0.2, -1.0, -0.3};
+  glm_vec3_scale(light_pos, -10, light_pos);
+  glm_translate(light_m, light_pos); // build m
+  glm_mat4_scale(light_m, 0.1);      // build m
   // === Application loop ==
   while (!glfwWindowShouldClose(w)) {
     // === update ===
     float time = glfwGetTime();
     updateFrameTime(&state.frame_t, time); // update frame time
+    cameraLookAt(&state.camera, v);        // set v
 
-    // === mvp setup begin ===
-    mat4 cube_m    = GLM_MAT4_IDENTITY; // cube model
-    mat4 light_m   = GLM_MAT4_IDENTITY; // light cube model
-    mat4 v         = GLM_MAT4_IDENTITY; // view
-    mat4 p         = GLM_MAT4_IDENTITY; // projection
-    vec3 light_pos = {2 * cos(time), 2 * sin(time), -2.0};
-
-    // mvp for light (mvp for cube is static)
-    glm_mat4_scale(light_m, 0.1);      // build m
-    glm_translate(light_m, light_pos); // build m
-    cameraLookAt(&state.camera, v);    // set v
-
-    handleInput(w, &state);         // handle input
-    cameraLookAt(&state.camera, v); // update view matrix
+    handleInput(w, &state); // handle input
     glm_perspective(glm_rad(45.0), (float)W / (float)H, 0.1, 100.0, p);
 
     // === draw ===
@@ -416,7 +426,7 @@ int main(void) {
 
     // cube
     glUseProgram(c_shader);
-    glUniformMatrix4fv(cube_model_loc, 1, GL_FALSE, (float*)cube_m);
+
     glUniformMatrix4fv(cube_view_loc, 1, GL_FALSE, (float*)v);
     glUniformMatrix4fv(cube_proj_loc, 1, GL_FALSE, (float*)p);
     glUniform3fv(cube_view_pos_loc, 1, state.camera.pos);
@@ -424,6 +434,7 @@ int main(void) {
     glUniform1f(cube_material_specular_loc, 1);
     glUniform1f(cube_material_shine_loc, 32);
     glUniform3fv(cube_light_position_loc, 1, light_pos);
+    glUniform3fv(cube_light_direction_loc, 1, (vec3){-0.2, -1, -0.3});
     glUniform3fv(cube_light_ambient_loc, 1, (vec3){0.2, 0.2, 0.2});
     glUniform3fv(cube_light_diffuse_loc, 1, (vec3){0.5, 0.5, 0.5});
     glUniform3fv(cube_light_specular_loc, 1, (vec3){1, 1, 1});
@@ -432,7 +443,16 @@ int main(void) {
     glBindTexture(GL_TEXTURE_2D, container_texture);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, container_texture_specular);
-    glDrawArrays(GL_TRIANGLES, 0, 36); // draw it
+
+    for (int i = 0; i < 10; i++) {
+      mat4 model_local = GLM_MAT4_IDENTITY;
+      glm_translate(model_local, cubePositions[i]);
+      float angle = 20.0f * i;
+      glm_rotate(model_local, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
+      glUniformMatrix4fv(cube_model_loc, 1, GL_FALSE, (float*)model_local);
+      glDrawArrays(GL_TRIANGLES, 0, 36); // draw it
+    }
+
     // light
     glUseProgram(light_shader);
     glUniformMatrix4fv(light_model_loc, 1, GL_FALSE, (float*)light_m);
