@@ -221,9 +221,15 @@ const char* CUBE_FSHADER = GLSL(
   struct Light {
     vec3 position;
     vec3 direction;
+    float cutOff;
+
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
+
+    float constant;
+    float linear;
+    float quadratic;
   };
 
   out vec4 FragColor;
@@ -237,22 +243,40 @@ const char* CUBE_FSHADER = GLSL(
   uniform vec3 viewPos;
 
   void main() {
-    // ambient
-    vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));
+    vec3 lightDir = normalize(light.position - FragPos);
+
+    // cutoff
+    float theta = dot(lightDir, normalize(-light.direction));
+    
+    // attenuation
+    float light_constant = 1.2;
+    float distance    = length(light.position - FragPos);
+    float attenuation = light_constant * 1.0 / (light.constant + light.linear * distance +  light.quadratic * (distance * distance));
+    
+
+
+    if (theta > light.cutOff) {
+      // ambient
+      vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));
+
+      // diffuse 
+      vec3 norm = normalize(Normal);
+      float diff = max(dot(norm, lightDir), 0);
+      vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));  
+      
+      // specular
+      vec3 viewDir = normalize(viewPos - FragPos);
+      vec3 reflectDir = reflect(-lightDir, norm);
+      float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shine);
+      vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));          
+
+      diffuse *= attenuation;
+      specular *= attenuation;
+      FragColor = vec4(ambient + diffuse + specular, 1.0); 
+    } else {
+      FragColor = vec4(light.ambient * vec3(texture(material.diffuse, TexCoords)), 1.0);
+    }
 	
-    // diffuse 
-    vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(-light.direction);
-    float diff = max(dot(norm, lightDir), 0);
-    vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));  
-
-    // specular
-    vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 8);
-    vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));          
-
-    FragColor = vec4(ambient + diffuse + specular, 1.0);
   }
 );
 const char* LIGHT_VSHADER = GLSL(
@@ -357,9 +381,13 @@ int main(void) {
   GLuint cube_material_shine_loc    = shaderVar(c_shader, "material.shine");
   GLuint cube_light_position_loc    = shaderVar(c_shader, "light.position");
   GLuint cube_light_direction_loc   = shaderVar(c_shader, "light.direction");
+  GLuint cube_light_cutoff_loc      = shaderVar(c_shader, "light.cutOff");
   GLuint cube_light_ambient_loc     = shaderVar(c_shader, "light.ambient");
   GLuint cube_light_diffuse_loc     = shaderVar(c_shader, "light.diffuse");
   GLuint cube_light_specular_loc    = shaderVar(c_shader, "light.specular");
+  GLuint cube_light_constant_loc    = shaderVar(c_shader, "light.constant");
+  GLuint cube_light_linear_loc      = shaderVar(c_shader, "light.linear");
+  GLuint cube_light_quadratic_loc   = shaderVar(c_shader, "light.quadratic");
   GLuint light_model_loc            = shaderVar(light_shader, "model");
   GLuint light_view_loc             = shaderVar(light_shader, "view");
   GLuint light_proj_loc             = shaderVar(light_shader, "projection");
@@ -410,6 +438,7 @@ int main(void) {
   glm_vec3_scale(light_pos, -10, light_pos);
   glm_translate(light_m, light_pos); // build m
   glm_mat4_scale(light_m, 0.1);      // build m
+
   // === Application loop ==
   while (!glfwWindowShouldClose(w)) {
     // === update ===
@@ -421,7 +450,7 @@ int main(void) {
     glm_perspective(glm_rad(45.0), (float)W / (float)H, 0.1, 100.0, p);
 
     // === draw ===
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // cube
@@ -433,11 +462,15 @@ int main(void) {
     glUniform1f(cube_material_diffuse_loc, 0);
     glUniform1f(cube_material_specular_loc, 1);
     glUniform1f(cube_material_shine_loc, 32);
-    glUniform3fv(cube_light_position_loc, 1, light_pos);
-    glUniform3fv(cube_light_direction_loc, 1, (vec3){-0.2, -1, -0.3});
+    glUniform3fv(cube_light_position_loc, 1, state.camera.pos);
+    glUniform3fv(cube_light_direction_loc, 1, state.camera.front);
+    glUniform1f(cube_light_cutoff_loc, cos(glm_rad(12.5F)));
     glUniform3fv(cube_light_ambient_loc, 1, (vec3){0.2, 0.2, 0.2});
     glUniform3fv(cube_light_diffuse_loc, 1, (vec3){0.5, 0.5, 0.5});
     glUniform3fv(cube_light_specular_loc, 1, (vec3){1, 1, 1});
+    glUniform1f(cube_light_constant_loc, 1.0f);
+    glUniform1f(cube_light_linear_loc, 0.045f);
+    glUniform1f(cube_light_quadratic_loc, 0.0075);
     glBindVertexArray(cube_VAO);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, container_texture);
@@ -454,12 +487,12 @@ int main(void) {
     }
 
     // light
-    glUseProgram(light_shader);
-    glUniformMatrix4fv(light_model_loc, 1, GL_FALSE, (float*)light_m);
-    glUniformMatrix4fv(light_view_loc, 1, GL_FALSE, (float*)v);
-    glUniformMatrix4fv(light_proj_loc, 1, GL_FALSE, (float*)p);
-    glBindVertexArray(light_VAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36); // draw it
+    // glUseProgram(light_shader);
+    // glUniformMatrix4fv(light_model_loc, 1, GL_FALSE, (float*)light_m);
+    // glUniformMatrix4fv(light_view_loc, 1, GL_FALSE, (float*)v);
+    // glUniformMatrix4fv(light_proj_loc, 1, GL_FALSE, (float*)p);
+    // glBindVertexArray(light_VAO);
+    // glDrawArrays(GL_TRIANGLES, 0, 36); // draw it
 
     // glfw: swap buffers
     glfwSwapBuffers(w); // swap buffer
