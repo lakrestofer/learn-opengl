@@ -11,7 +11,7 @@ typedef GLuint Shader;
 
 #define initVShader(src) initShader(GL_VERTEX_SHADER, src)
 #define initFShader(src) initShader(GL_FRAGMENT_SHADER, src)
-GLuint initShader(GLenum type, const char* shader_src);
+GLuint initShader(GLenum type, const char* shader_src_path);
 bool shaderIsValid(GLuint shader);
 GLuint linkShaders(GLuint v_shader, GLuint f_shader);
 bool shaderProgramIsValid(GLuint program);

@@ -6,6 +6,8 @@
 #include <cglm/mat4.h>
 #include <cglm/vec3.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <sys/stat.h>
 // local dependencies
 #include "init.h"
 #include "shaders/utils.h"
@@ -117,12 +119,10 @@ GameState defaultGameState(void) {
 
 // === callbacks ===
 
-bool screenResized = false;
-void onResizeScreen(GLFWwindow* _, int width, int height) {
-  glViewport(0, 0, width, height);
-  W             = width;
-  H             = height;
-  screenResized = true;
+void onResizeScreen(GLFWwindow* _, int w, int h) {
+  glViewport(0, 0, w, h);
+  W = w;
+  H = h;
 }
 
 // === application code ===
@@ -184,116 +184,16 @@ float vertices[] = {
     -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
     -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
 };
-const int stride =  (8 * sizeof(float));
-const void* vertex_offset = (void*) 0;
-const void* normal_offset = (void*) (3 * sizeof(float));
-const void* texture_coord_offset = (void*) (6 * sizeof(float));
-// does no transformation on the vertices
-const char* CUBE_VSHADER = GLSL(
-  layout (location = 0) in vec3 aPos;
-  layout (location = 1) in vec3 aNormal;
-  layout (location = 2) in vec2 aTexCoords;
-
-  out vec3 FragPos;
-  out vec3 Normal;
-  out vec2 TexCoords;
-
-  uniform mat4 model;
-  uniform mat4 view;
-  uniform mat4 projection;
-
-  void main() {
-      FragPos = vec3(model * vec4(aPos, 1.0));
-      Normal = mat3(transpose(inverse(model))) * aNormal;
-      TexCoords = aTexCoords;
-    
-      gl_Position = projection * view * vec4(FragPos, 1.0);
-  }
-);
-// colors each pixel within the triangle red
-const char* CUBE_FSHADER = GLSL(
-  struct Material {
-    sampler2D diffuse;
-    sampler2D specular;
-    float shine;
-  };
-
-  struct Light {
-    vec3 position;
-    vec3 direction;
-    float cutOff;
-    float outerCutOff;
-
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
-
-    float constant;
-    float linear;
-    float quadratic;
-  };
-
-  out vec4 FragColor;
-
-  in vec2 TexCoords;
-  in vec3 Normal;  
-  in vec3 FragPos;  
-
-  uniform Material material;
-  uniform Light light;
-  uniform vec3 viewPos;
-
-  void main() {
-    vec3 lightDir = normalize(light.position - FragPos);
-
-    // cutoff
-    float theta = dot(lightDir, normalize(-light.direction));
-    float epsilon = light.cutOff - light.outerCutOff;
-    float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
-    
-    // attenuation
-    float light_constant = 1.2;
-    float distance    = length(light.position - FragPos);
-    float attenuation = light_constant * 1.0 / (light.constant + light.linear * distance +  light.quadratic * (distance * distance));
-
-    // ambient
-    vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));
-
-    // diffuse 
-    vec3 norm = normalize(Normal);
-    float diff = max(dot(norm, lightDir), 0);
-    vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));  
-    
-    // specular
-    vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shine);
-    vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));          
-
-    diffuse *=  intensity;
-    specular *=  intensity;
-    FragColor = vec4(ambient + diffuse + specular, 1.0); 
-	
-  }
-);
-const char* LIGHT_VSHADER = GLSL(
-  layout (location = 0) in vec3 aPos;
-
-  uniform mat4 model;
-  uniform mat4 view;
-  uniform mat4 projection;
-
-  void main() {
-  	gl_Position = projection * view * model * vec4(aPos, 1.0);
-  }
-);
-const char* LIGHT_FSHADER = GLSL(
-  out vec4 FragColor;
-  void main() {
-      FragColor = vec4(1.0);
-  }
-);
 // clang-format on
+const int stride                 = (8 * sizeof(float));
+const void* vertex_offset        = (void*)0;
+const void* normal_offset        = (void*)(3 * sizeof(float));
+const void* texture_coord_offset = (void*)(6 * sizeof(float));
+// shader paths
+const char* CUBE_VSHADER  = "shaders/cube.vert";
+const char* CUBE_FSHADER  = "shaders/cube.frag";
+const char* LIGHT_VSHADER = "shaders/light.vert";
+const char* LIGHT_FSHADER = "shaders/light.frag";
 
 #define closeWindow() glfwSetWindowShouldClose(w, true);
 #define K(key) GLFW_KEY_##key

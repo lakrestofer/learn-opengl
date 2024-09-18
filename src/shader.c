@@ -1,10 +1,24 @@
 #include "shaders/shader.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 GLuint initShader(GLenum type, const char* shader_src) {
+  // read file
+  FILE* f = fopen(shader_src, "r"); // open file
+  if (!f) return 0;
+  fseek(f, 0, SEEK_END);
+  int length = ftell(f); // find length of file
+  fseek(f, 0, SEEK_SET);
+  char* buffer = malloc(length + 1); // allocate memory for file
+  if (!buffer) return 0;
+  fread(buffer, 1, length, f); // copy file
+  buffer[length] = 0;          // make sure to zero terminate it
+  fclose(f);                   // close file object
+
   GLuint obj = glCreateShader(type);
-  glShaderSource(obj, 1, &shader_src, NULL);
+  glShaderSource(obj, 1, &buffer, NULL);
   glCompileShader(obj);
+  free(buffer); // free the buffer
   return obj;
 }
 bool shaderIsValid(GLuint shader) {
