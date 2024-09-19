@@ -128,18 +128,6 @@ void onResizeScreen(GLFWwindow* _, int w, int h) {
 // === application code ===
 
 // clang-format off
-vec3 cubePositions[] = {
-    { 0.0f,  0.0f,  0.0f},
-    { 2.0f,  5.0f, -15.0f},
-    {-1.5f, -2.2f, -2.5f},
-    {-3.8f, -2.0f, -12.3f},
-    { 2.4f, -0.4f, -3.5f},
-    {-1.7f,  3.0f, -7.5f},
-    { 1.3f, -2.0f, -2.5f},
-    { 1.5f,  2.0f, -2.5f},
-    { 1.5f,  0.2f, -1.5f},
-    {-1.3f,  1.0f, -1.5}
-};
 float vertices[] = {
     // positions          // normals           // texture coords
     -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
@@ -269,26 +257,35 @@ int main(void) {
   glDeleteShader(light_frag_shader);
 
   // locations for uniform vars
-  GLuint cube_model_loc              = shaderVar(c_shader, "model");
-  GLuint cube_view_loc               = shaderVar(c_shader, "view");
-  GLuint cube_proj_loc               = shaderVar(c_shader, "projection");
-  GLuint cube_view_pos_loc           = shaderVar(c_shader, "viewPos");
-  GLuint cube_material_diffuse_loc   = shaderVar(c_shader, "material.diffuse");
-  GLuint cube_material_specular_loc  = shaderVar(c_shader, "material.specular");
-  GLuint cube_material_shine_loc     = shaderVar(c_shader, "material.shine");
-  GLuint cube_light_position_loc     = shaderVar(c_shader, "light.position");
-  GLuint cube_light_direction_loc    = shaderVar(c_shader, "light.direction");
-  GLuint cube_light_cutoff_loc       = shaderVar(c_shader, "light.cutOff");
-  GLuint cube_light_outer_cutoff_loc = shaderVar(c_shader, "light.outerCutOff");
-  GLuint cube_light_ambient_loc      = shaderVar(c_shader, "light.ambient");
-  GLuint cube_light_diffuse_loc      = shaderVar(c_shader, "light.diffuse");
-  GLuint cube_light_specular_loc     = shaderVar(c_shader, "light.specular");
-  GLuint cube_light_constant_loc     = shaderVar(c_shader, "light.constant");
-  GLuint cube_light_linear_loc       = shaderVar(c_shader, "light.linear");
-  GLuint cube_light_quadratic_loc    = shaderVar(c_shader, "light.quadratic");
-  GLuint light_model_loc             = shaderVar(light_shader, "model");
-  GLuint light_view_loc              = shaderVar(light_shader, "view");
-  GLuint light_proj_loc              = shaderVar(light_shader, "projection");
+  GLuint cube_model_loc    = shaderVar(c_shader, "model");
+  GLuint cube_view_loc     = shaderVar(c_shader, "view");
+  GLuint cube_proj_loc     = shaderVar(c_shader, "projection");
+  GLuint cube_view_pos_loc = shaderVar(c_shader, "viewPos");
+  // material
+  GLuint cube_material_diffuse_loc  = shaderVar(c_shader, "material.diffuse");
+  GLuint cube_material_specular_loc = shaderVar(c_shader, "material.specular");
+  GLuint cube_material_shine_loc    = shaderVar(c_shader, "material.shininess");
+  // directional
+  GLuint cube_dir_light_direction_loc =
+      shaderVar(c_shader, "dirLight.direction");
+  GLuint cube_dir_light_ambient_loc  = shaderVar(c_shader, "dirLight.ambient");
+  GLuint cube_dir_light_diffuse_loc  = shaderVar(c_shader, "dirLight.diffuse");
+  GLuint cube_dir_light_specular_loc = shaderVar(c_shader, "dirLight.specular");
+
+  GLuint cube_light_position_loc  = shaderVar(c_shader, "spotLight.position");
+  GLuint cube_light_direction_loc = shaderVar(c_shader, "spotLight.direction");
+  GLuint cube_light_cutoff_loc    = shaderVar(c_shader, "spotLight.cutOff");
+  GLuint cube_light_outer_cutoff_loc =
+      shaderVar(c_shader, "spotLight.outerCutOff");
+  GLuint cube_light_ambient_loc   = shaderVar(c_shader, "spotLight.ambient");
+  GLuint cube_light_diffuse_loc   = shaderVar(c_shader, "spotLight.diffuse");
+  GLuint cube_light_specular_loc  = shaderVar(c_shader, "spotLight.specular");
+  GLuint cube_light_constant_loc  = shaderVar(c_shader, "spotLight.constant");
+  GLuint cube_light_linear_loc    = shaderVar(c_shader, "spotLight.linear");
+  GLuint cube_light_quadratic_loc = shaderVar(c_shader, "spotLight.quadratic");
+  GLuint light_model_loc          = shaderVar(light_shader, "model");
+  GLuint light_view_loc           = shaderVar(light_shader, "view");
+  GLuint light_proj_loc           = shaderVar(light_shader, "projection");
 
   // === load textures ===
   GLuint container_texture = createTexture("container2.png", PNG);
@@ -360,6 +357,11 @@ int main(void) {
     glUniform1f(cube_material_diffuse_loc, 0);
     glUniform1f(cube_material_specular_loc, 1);
     glUniform1f(cube_material_shine_loc, 32);
+
+    glUniform3fv(cube_dir_light_direction_loc, 1, (vec3){-0.2, -1, -0.3});
+    glUniform3fv(cube_dir_light_ambient_loc, 1, (vec3){0.1, 0.1, 0.1});
+    glUniform3fv(cube_dir_light_diffuse_loc, 1, (vec3){0.4, 0.4, 0.4});
+    glUniform3fv(cube_dir_light_specular_loc, 1, (vec3){0.5, 0.5, 0.5});
     glUniform3fv(cube_light_position_loc, 1, state.camera.pos);
     glUniform3fv(cube_light_direction_loc, 1, state.camera.front);
     glUniform1f(cube_light_cutoff_loc, cos(glm_rad(12.5F)));
@@ -375,23 +377,16 @@ int main(void) {
     glBindTexture(GL_TEXTURE_2D, container_texture);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, container_texture_specular);
-
-    for (int i = 0; i < 10; i++) {
-      mat4 model_local = GLM_MAT4_IDENTITY;
-      glm_translate(model_local, cubePositions[i]);
-      float angle = 20.0f * i;
-      glm_rotate(model_local, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
-      glUniformMatrix4fv(cube_model_loc, 1, GL_FALSE, (float*)model_local);
-      glDrawArrays(GL_TRIANGLES, 0, 36); // draw it
-    }
+    glUniformMatrix4fv(cube_model_loc, 1, GL_FALSE, (float*)cube_m);
+    glDrawArrays(GL_TRIANGLES, 0, 36); // draw it
 
     // light
-    // glUseProgram(light_shader);
-    // glUniformMatrix4fv(light_model_loc, 1, GL_FALSE, (float*)light_m);
-    // glUniformMatrix4fv(light_view_loc, 1, GL_FALSE, (float*)v);
-    // glUniformMatrix4fv(light_proj_loc, 1, GL_FALSE, (float*)p);
-    // glBindVertexArray(light_VAO);
-    // glDrawArrays(GL_TRIANGLES, 0, 36); // draw it
+    glUseProgram(light_shader);
+    glUniformMatrix4fv(light_model_loc, 1, GL_FALSE, (float*)light_m);
+    glUniformMatrix4fv(light_view_loc, 1, GL_FALSE, (float*)v);
+    glUniformMatrix4fv(light_proj_loc, 1, GL_FALSE, (float*)p);
+    glBindVertexArray(light_VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 36); // draw it
 
     // glfw: swap buffers
     glfwSwapBuffers(w); // swap buffer
