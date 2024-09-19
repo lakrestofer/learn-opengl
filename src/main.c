@@ -6,14 +6,16 @@
 #include <cglm/mat4.h>
 #include <cglm/vec3.h>
 #include <stdbool.h>
-#include <stdio.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 // local dependencies
 #include "init.h"
-#include "shaders/utils.h"
 #include "shaders/shader.h"
 #include "external/stb_image.h"
 #include "textures/texture.h"
+#include "models/model.h"
+#define CGLTF_IMPLEMENTATION
+#include <cgltf/cgltf.h>
 
 int H    = 480;
 int W    = 640;
@@ -127,56 +129,6 @@ void onResizeScreen(GLFWwindow* _, int w, int h) {
 
 // === application code ===
 
-// clang-format off
-float vertices[] = {
-    // positions          // normals           // texture coords
-    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-     0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-
-    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-
-    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-
-    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
-};
-// clang-format on
-const int stride                 = (8 * sizeof(float));
-const void* vertex_offset        = (void*)0;
-const void* normal_offset        = (void*)(3 * sizeof(float));
-const void* texture_coord_offset = (void*)(6 * sizeof(float));
 // shader paths
 const char* CUBE_VSHADER  = "shaders/cube.vert";
 const char* CUBE_FSHADER  = "shaders/cube.frag";
@@ -228,8 +180,23 @@ void mouseCallback(GLFWwindow* w, double cx, double cy) {
 }
 
 int main(void) {
+  // setup default state
+  GLFWwindow* w = NULL;
+  // 3d models
+  cgltf_options ops       = {0};
+  cgltf_data* earth_model = NULL;
+  cgltf_data* sun_model   = NULL;
+  cgltf_result err        = cgltf_result_success;
+  // game state
+  GameState state = defaultGameState();
+  // default model view projection matrices
+  mat4 m = GLM_MAT4_IDENTITY; // cube model
+  mat4 v = GLM_MAT4_IDENTITY; // view
+  mat4 p = GLM_MAT4_IDENTITY; // projection
+
   // === Init glfw and gl context ===
-  GLFWwindow* w = initAndCreateWindow(W, H, WT);
+  w = initAndCreateWindow(W, H, WT);
+  if (!w) goto clean;
 
   // === set glfw settings ===
   glfwSetInputMode(w, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -242,97 +209,28 @@ int main(void) {
   glfwSetFramebufferSizeCallback(w, onResizeScreen);
   glfwSetCursorPosCallback(w, mouseCallback);
 
+  // === load 3d models ===
+  err = cgltf_parse_file(&ops, "models/earth.glb", &earth_model) |
+        cgltf_parse_file(&ops, "models/sun.glb", &sun_model);
+
+  print_gltf_info(earth_model, "models/earth.glb");
+  print_gltf_info(sun_model, "models/sun.glb");
+  if (err) goto clean;
+
   // === compile and link shaders ==
-  GLuint cube_vert_shader  = initVShader(CUBE_VSHADER);
-  GLuint cube_frag_shader  = initFShader(CUBE_FSHADER);
-  GLuint light_vert_shader = initVShader(LIGHT_VSHADER);
-  GLuint light_frag_shader = initFShader(LIGHT_FSHADER);
-  if (!shaderIsValid(cube_vert_shader) || !shaderIsValid(cube_frag_shader))
-    goto clean;
-  GLuint c_shader     = linkShaders(cube_vert_shader, cube_frag_shader);
-  GLuint light_shader = linkShaders(light_vert_shader, light_frag_shader);
-  if (!shaderProgramIsValid(c_shader)) goto clean;
-  glDeleteShader(cube_vert_shader);
-  glDeleteShader(cube_frag_shader);
-  glDeleteShader(light_frag_shader);
 
   // locations for uniform vars
-  GLuint cube_model_loc    = shaderVar(c_shader, "model");
-  GLuint cube_view_loc     = shaderVar(c_shader, "view");
-  GLuint cube_proj_loc     = shaderVar(c_shader, "projection");
-  GLuint cube_view_pos_loc = shaderVar(c_shader, "viewPos");
-  // material
-  GLuint cube_material_diffuse_loc  = shaderVar(c_shader, "material.diffuse");
-  GLuint cube_material_specular_loc = shaderVar(c_shader, "material.specular");
-  GLuint cube_material_shine_loc    = shaderVar(c_shader, "material.shininess");
-  // directional
-  GLuint cube_dir_light_direction_loc =
-      shaderVar(c_shader, "dirLight.direction");
-  GLuint cube_dir_light_ambient_loc  = shaderVar(c_shader, "dirLight.ambient");
-  GLuint cube_dir_light_diffuse_loc  = shaderVar(c_shader, "dirLight.diffuse");
-  GLuint cube_dir_light_specular_loc = shaderVar(c_shader, "dirLight.specular");
-
-  GLuint cube_light_position_loc  = shaderVar(c_shader, "spotLight.position");
-  GLuint cube_light_direction_loc = shaderVar(c_shader, "spotLight.direction");
-  GLuint cube_light_cutoff_loc    = shaderVar(c_shader, "spotLight.cutOff");
-  GLuint cube_light_outer_cutoff_loc =
-      shaderVar(c_shader, "spotLight.outerCutOff");
-  GLuint cube_light_ambient_loc   = shaderVar(c_shader, "spotLight.ambient");
-  GLuint cube_light_diffuse_loc   = shaderVar(c_shader, "spotLight.diffuse");
-  GLuint cube_light_specular_loc  = shaderVar(c_shader, "spotLight.specular");
-  GLuint cube_light_constant_loc  = shaderVar(c_shader, "spotLight.constant");
-  GLuint cube_light_linear_loc    = shaderVar(c_shader, "spotLight.linear");
-  GLuint cube_light_quadratic_loc = shaderVar(c_shader, "spotLight.quadratic");
-  GLuint light_model_loc          = shaderVar(light_shader, "model");
-  GLuint light_view_loc           = shaderVar(light_shader, "view");
-  GLuint light_proj_loc           = shaderVar(light_shader, "projection");
 
   // === load textures ===
-  GLuint container_texture = createTexture("container2.png", PNG);
-  GLuint container_texture_specular =
-      createTexture("container2_specular.png", PNG);
 
   // === setup gl objects ===
-  // copy vertices to vram
-  GLuint VBO; // vertex buffer object
-  glGenBuffers(1, &VBO);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO); // set VBO as currently active
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-  // cube
-  GLuint cube_VAO; // vertex array object
-  glGenVertexArrays(1, &cube_VAO);
-  glBindVertexArray(cube_VAO);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, vertex_offset);
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, normal_offset);
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, texture_coord_offset);
-  glEnableVertexAttribArray(2);
-  // light cube
-  GLuint light_VAO; // vertex array object
-  glGenVertexArrays(1, &light_VAO);
-  glBindVertexArray(light_VAO);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO); // ram -> vram
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, vertex_offset);
-  glEnableVertexAttribArray(0);
 
   // == we setup global game state ===
-  GameState state = defaultGameState();
 
   // we make game state available from everywhere
   glfwSetWindowUserPointer(w, &state);
 
   // === mvp setup begin ===
-
-  mat4 cube_m    = GLM_MAT4_IDENTITY; // cube model
-  mat4 light_m   = GLM_MAT4_IDENTITY; // light cube model
-  mat4 v         = GLM_MAT4_IDENTITY; // view
-  mat4 p         = GLM_MAT4_IDENTITY; // projection
-  vec3 light_pos = {-0.2, -1.0, -0.3};
-  glm_vec3_scale(light_pos, -10, light_pos);
-  glm_translate(light_m, light_pos); // build m
-  glm_mat4_scale(light_m, 0.1);      // build m
 
   // === Application loop ==
   while (!glfwWindowShouldClose(w)) {
@@ -348,46 +246,6 @@ int main(void) {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // cube
-    glUseProgram(c_shader);
-
-    glUniformMatrix4fv(cube_view_loc, 1, GL_FALSE, (float*)v);
-    glUniformMatrix4fv(cube_proj_loc, 1, GL_FALSE, (float*)p);
-    glUniform3fv(cube_view_pos_loc, 1, state.camera.pos);
-    glUniform1f(cube_material_diffuse_loc, 0);
-    glUniform1f(cube_material_specular_loc, 1);
-    glUniform1f(cube_material_shine_loc, 32);
-
-    glUniform3fv(cube_dir_light_direction_loc, 1, (vec3){-0.2, -1, -0.3});
-    glUniform3fv(cube_dir_light_ambient_loc, 1, (vec3){0.1, 0.1, 0.1});
-    glUniform3fv(cube_dir_light_diffuse_loc, 1, (vec3){0.4, 0.4, 0.4});
-    glUniform3fv(cube_dir_light_specular_loc, 1, (vec3){0.5, 0.5, 0.5});
-    glUniform3fv(cube_light_position_loc, 1, state.camera.pos);
-    glUniform3fv(cube_light_direction_loc, 1, state.camera.front);
-    glUniform1f(cube_light_cutoff_loc, cos(glm_rad(12.5F)));
-    glUniform1f(cube_light_outer_cutoff_loc, cos(glm_rad(17.5F)));
-    glUniform3fv(cube_light_ambient_loc, 1, (vec3){0.2, 0.2, 0.2});
-    glUniform3fv(cube_light_diffuse_loc, 1, (vec3){0.5, 0.5, 0.5});
-    glUniform3fv(cube_light_specular_loc, 1, (vec3){1, 1, 1});
-    glUniform1f(cube_light_constant_loc, 1.0f);
-    glUniform1f(cube_light_linear_loc, 0.045f);
-    glUniform1f(cube_light_quadratic_loc, 0.0075);
-    glBindVertexArray(cube_VAO);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, container_texture);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, container_texture_specular);
-    glUniformMatrix4fv(cube_model_loc, 1, GL_FALSE, (float*)cube_m);
-    glDrawArrays(GL_TRIANGLES, 0, 36); // draw it
-
-    // light
-    glUseProgram(light_shader);
-    glUniformMatrix4fv(light_model_loc, 1, GL_FALSE, (float*)light_m);
-    glUniformMatrix4fv(light_view_loc, 1, GL_FALSE, (float*)v);
-    glUniformMatrix4fv(light_proj_loc, 1, GL_FALSE, (float*)p);
-    glBindVertexArray(light_VAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36); // draw it
-
     // glfw: swap buffers
     glfwSwapBuffers(w); // swap buffer
     glfwPollEvents();   // poll for more events
@@ -396,6 +254,8 @@ int main(void) {
   // === Cleanup ===
 clean:
   glfwTerminate();
+  if (earth_model) cgltf_free(earth_model);
+  if (sun_model) cgltf_free(sun_model);
   if (!w) return -1; // glfw could not init window
   return 0;
 }

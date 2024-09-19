@@ -4,5 +4,6 @@ sources = files(
   'shader.c',
   'stb_image.c',
   'init.c',
-  'texture.c'
+  'texture.c',
+  'model.c'
 )
