@@ -3,6 +3,22 @@
 
 #include <cgltf/cgltf.h>
 
-void print_gltf_info(cgltf_data* data, const char* file_name);
+typedef struct {
+  int n_vertices;
+  float* vertices;
+  float* indices;
+} Mesh;
+
+typedef struct {
+  int n_meshes;
+  Mesh* meshes;
+} Model;
+
+void printGltfInfo(cgltf_data* data);
+
+Model* loadModelFromGltfFile(const char* path);
+
+void freeMesh(Mesh* mesh);
+void freeModel(Model* model);
 
 #endif

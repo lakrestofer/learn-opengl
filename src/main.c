@@ -1,21 +1,16 @@
 // system dependencies
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
-#include <cglm/cam.h>
 #include <cglm/cglm.h>
-#include <cglm/mat4.h>
-#include <cglm/vec3.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 // local dependencies
 #include "init.h"
-#include "shaders/shader.h"
+// #include "shaders/shader.h"
 #include "external/stb_image.h"
-#include "textures/texture.h"
+// #include "textures/texture.h"
 #include "models/model.h"
-#define CGLTF_IMPLEMENTATION
-#include <cgltf/cgltf.h>
 
 int H    = 480;
 int W    = 640;
@@ -183,10 +178,9 @@ int main(void) {
   // setup default state
   GLFWwindow* w = NULL;
   // 3d models
-  cgltf_options ops       = {0};
-  cgltf_data* earth_model = NULL;
-  cgltf_data* sun_model   = NULL;
-  cgltf_result err        = cgltf_result_success;
+  Model* earth_model = NULL;
+  Model* sun_model   = NULL;
+
   // game state
   GameState state = defaultGameState();
   // default model view projection matrices
@@ -210,12 +204,9 @@ int main(void) {
   glfwSetCursorPosCallback(w, mouseCallback);
 
   // === load 3d models ===
-  err = cgltf_parse_file(&ops, "models/earth.glb", &earth_model) |
-        cgltf_parse_file(&ops, "models/sun.glb", &sun_model);
-
-  print_gltf_info(earth_model, "models/earth.glb");
-  print_gltf_info(sun_model, "models/sun.glb");
-  if (err) goto clean;
+  earth_model = loadModelFromGltfFile("models/earth.glb");
+  sun_model   = loadModelFromGltfFile("models/sun.glb");
+  if (!earth_model || sun_model) goto clean;
 
   // === compile and link shaders ==
 
@@ -254,8 +245,8 @@ int main(void) {
   // === Cleanup ===
 clean:
   glfwTerminate();
-  if (earth_model) cgltf_free(earth_model);
-  if (sun_model) cgltf_free(sun_model);
+  if (earth_model) freeModel(earth_model);
+  if (sun_model) freeModel(sun_model);
   if (!w) return -1; // glfw could not init window
   return 0;
 }
