@@ -5,8 +5,12 @@
 
 typedef struct {
   int n_vertices;
+  int n_triangles;
   float* vertices;
-  float* indices;
+  float* normals;
+  float* tangents;
+  float* tex_coords;
+  unsigned short* indices;
 } Mesh;
 
 typedef struct {
@@ -20,6 +24,7 @@ typedef enum {
 } LoadModelRes;
 
 void printGltfInfo(cgltf_data* data);
+void printMesh(Mesh* m);
 
 LoadModelRes loadModelFromGltfFile(const char* path, Model* model);
 
