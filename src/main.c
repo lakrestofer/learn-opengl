@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 // local dependencies
 #include "init.h"
-// #include "shaders/shader.h"
+#include "shaders/shader.h"
 #include "external/stb_image.h"
 // #include "textures/texture.h"
 #include "models/model.h"
@@ -125,10 +125,8 @@ void onResizeScreen(GLFWwindow* _, int w, int h) {
 // === application code ===
 
 // shader paths
-const char* CUBE_VSHADER  = "shaders/cube.vert";
-const char* CUBE_FSHADER  = "shaders/cube.frag";
-const char* LIGHT_VSHADER = "shaders/light.vert";
-const char* LIGHT_FSHADER = "shaders/light.frag";
+const char* SUN_VERT_SRS = "shaders/sun.vert";
+const char* SUN_FRAG_SRS = "shaders/sun.frag";
 
 #define closeWindow() glfwSetWindowShouldClose(w, true);
 #define K(key) GLFW_KEY_##key
@@ -204,7 +202,9 @@ int main(void) {
   glfwSetCursorPosCallback(w, mouseCallback);
 
   // === load 3d models ===
-  int model_load_error = loadModelFromGltfFile("models/earth.glb", &earth_model) | loadModelFromGltfFile("models/sun.glb", &sun_model);
+  int model_load_error =
+      loadModelFromGltfFile("models/earth.glb", &earth_model) |
+      loadModelFromGltfFile("models/sun.glb", &sun_model);
   if (model_load_error) goto clean;
 
   // === compile and link shaders ==
@@ -212,6 +212,13 @@ int main(void) {
   // locations for uniform vars
 
   // === load textures ===
+  GLuint sun_vert = initVShader(SUN_VERT_SRS);
+  GLuint sun_frag = initVShader(SUN_FRAG_SRS);
+  bool shad_ok    = shaderIsValid(sun_vert) && shaderIsValid(sun_frag);
+  if (!shad_ok) goto clean;
+  GLuint sun_shader = linkShaders(sun_vert, sun_frag);
+  shad_ok           = shaderIsValid(sun_shader);
+  if (!shad_ok) goto clean;
 
   // === setup gl objects ===
 
