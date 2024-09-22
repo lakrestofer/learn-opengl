@@ -11,7 +11,6 @@ project('learn-opengl', 'c',
 glfw_dep = dependency('glfw3')
 cblas_dep = dependency('cblas')
 cglm_dep = dependency('cglm')
-assimp_dep = dependency('assimp')
 
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required : false)
@@ -20,7 +19,6 @@ deps = [
   glfw_dep,
   cblas_dep,
   cglm_dep,
-  assimp_dep,
   m_dep,
 ]
 

@@ -178,8 +178,8 @@ int main(void) {
   // setup default state
   GLFWwindow* w = NULL;
   // 3d models
-  Model* earth_model = NULL;
-  Model* sun_model   = NULL;
+  Model earth_model = {0};
+  Model sun_model   = {0};
 
   // game state
   GameState state = defaultGameState();
@@ -204,9 +204,8 @@ int main(void) {
   glfwSetCursorPosCallback(w, mouseCallback);
 
   // === load 3d models ===
-  earth_model = loadModelFromGltfFile("models/earth.glb");
-  sun_model   = loadModelFromGltfFile("models/sun.glb");
-  if (!earth_model || sun_model) goto clean;
+  int model_load_error = loadModelFromGltfFile("models/earth.glb", &earth_model) | loadModelFromGltfFile("models/sun.glb", &sun_model);
+  if (model_load_error) goto clean;
 
   // === compile and link shaders ==
 
@@ -245,8 +244,6 @@ int main(void) {
   // === Cleanup ===
 clean:
   glfwTerminate();
-  if (earth_model) freeModel(earth_model);
-  if (sun_model) freeModel(sun_model);
   if (!w) return -1; // glfw could not init window
   return 0;
 }

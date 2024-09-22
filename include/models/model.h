@@ -14,9 +14,14 @@ typedef struct {
   Mesh* meshes;
 } Model;
 
+typedef enum {
+  SUCCESS,
+  ERROR,
+} LoadModelRes;
+
 void printGltfInfo(cgltf_data* data);
 
-Model* loadModelFromGltfFile(const char* path);
+LoadModelRes loadModelFromGltfFile(const char* path, Model* model);
 
 void freeMesh(Mesh* mesh);
 void freeModel(Model* model);
