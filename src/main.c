@@ -209,10 +209,6 @@ int main(void) {
   if (model_load_error) goto clean;
 
   // === compile and link shaders ==
-
-  // locations for uniform vars
-
-  // === load textures ===
   GLuint sun_vert = initVShader(SUN_VERT_SRS);
   GLuint sun_frag = initVShader(SUN_FRAG_SRS);
   bool shad_ok    = shaderIsValid(sun_vert) && shaderIsValid(sun_frag);
@@ -221,9 +217,17 @@ int main(void) {
   shad_ok           = shaderIsValid(sun_shader);
   if (!shad_ok) goto clean;
 
+  // locations for uniform vars
+
+  // === load textures ===
+
   // === setup gl objects ===
-  GlObjects wrappers = {0};
-  initObjects(models, &wrappers, N_MODELS);
+  int n_meshes = 0;
+  for (int i = 0; i < N_MODELS; i++) n_meshes += models[i].n_meshes;
+  GlMeshWrapper* wrappers           = calloc(n_meshes, sizeof(GlMeshWrapper));
+  ModelSlice models_slice           = {models, N_MODELS};
+  GlMeshWrapperSlice wrappers_slice = {wrappers, n_meshes};
+  initMeshWrappers(models_slice, wrappers_slice);
 
   // == we setup global game state ===
 

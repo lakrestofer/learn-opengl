@@ -22,6 +22,7 @@ GLuint initShader(GLenum type, const char* shader_src) {
   return obj;
 }
 bool shaderIsValid(GLuint shader) {
+  if (!shader) return false;
   int success;
   char infoLog[512];
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);

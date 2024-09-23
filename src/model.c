@@ -182,7 +182,7 @@ LoadModelRes loadModelFromGltfFile(const char* path, Model* model) {
       }
       // then we check for and load indices
       if (primitive->indices) {
-        printf("> processing primitive %zu, checkick if indices exists\n", pi);
+        printf("> processing primitive %zu, checking if indices exists\n", pi);
         cgltf_accessor* accessor = primitive->indices;
         int n_indices            = accessor->count;
         mesh->n_triangles        = n_indices / 3;
@@ -202,8 +202,8 @@ LoadModelRes loadModelFromGltfFile(const char* path, Model* model) {
       } else {
         mesh->n_triangles = mesh->n_vertices / 3;
       }
-      printf("> processing primitive %zu, done!", pi);
-      printf("> Mesh %zu:", pi);
+      printf("> processing primitive %zu, done!\n", pi);
+      printf("> Mesh %zu:\n", pi);
       printMesh(mesh);
       mesh_index++;
     }

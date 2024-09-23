@@ -2,6 +2,7 @@
 #define MODEL_HEADER_DEFINED
 
 #include <cgltf/cgltf.h>
+#include "util.h"
 
 typedef struct {
   int n_vertices;
@@ -17,6 +18,9 @@ typedef struct {
   int n_meshes;
   Mesh* meshes;
 } Model;
+
+DEFINE_SLICE_STRUCT(Model)
+
 
 typedef enum {
   SUCCESS,

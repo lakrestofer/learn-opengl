@@ -3,8 +3,7 @@
 
 #include "glad/gl.h"
 #include "models/model.h"
-#include <stdlib.h>
-#include <string.h>
+#include "util.h"
 
 /*
 * Abstraction layer over opengl, adapted for usage in this application
@@ -12,21 +11,25 @@
 
 #define PACKED __attribute__((packed))
 
-typedef struct {
-  short i;
-  short n;
-} VboSlice;
+/// enum mapping to buffer
+typedef enum {
+  VERTICES,
+  NORMALS,
+  TANGENT,
+  TEXCOORD,
+  BUFFER_CONTENT_MAX
+} BufferContent;
 
-/// a container for the VAO, VBOs, EBOs needed to render several models
-/// uses SOA layout
+/// a container for the VAO, VBOs, EBOs needed to render a model
 typedef struct {
-  GLuint* vao;
-  short* vbo_map;
-  short* vbo_len_map;
-  GLuint* vbo;
-  GLuint* ebo;
-} GlObjects;
+  Mesh* mesh;
+  GLuint vao;
+  GLuint ebo;
+  GLuint vbo[BUFFER_CONTENT_MAX];
+} GlMeshWrapper;
 
-void initObjects(Model* models, GlObjects* wrappers, int n_models);
+DEFINE_SLICE_STRUCT(GlMeshWrapper)
+
+void initMeshWrappers(ModelSlice models, GlMeshWrapperSlice wrappers);
 
 #endif

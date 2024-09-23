@@ -17,6 +17,6 @@ out vec3 coordinates;
 void main() {
     normals  = in_normals;
     tangents = in_tangents;
-    coord    = in_coord;
-    gl_Position  = projection * view * model * vec4(vertices, 1.0);
+    coordinates = in_coordinates;
+    gl_Position  = projection * view * model * vec4(in_vertices, 1.0);
 }
