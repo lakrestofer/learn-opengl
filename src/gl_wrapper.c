@@ -47,9 +47,15 @@ void initMeshWrappers(ModelSlice models, GlMeshWrapperSlice wrappers) {
     char s[4]   = {3, 3, 4, 2};
 
     for (int j = 0; j < BUFFER_CONTENT_MAX; j++) {
-      if (b[i]) { // if the
-        bindArrayBuffer(w->vbo[i]);
-        arrayBufferData(n * s[i] * sizeof(float), b[i]);
+      if (b[i]) {
+        glBindBuffer(GL_ARRAY_BUFFER, w->vbo[i]);
+        glBufferData(
+            GL_ARRAY_BUFFER, n * s[i] * sizeof(float), b[i], GL_STATIC_DRAW
+        );
+        glVertexAttribPointer(
+            i, s[i], GL_FLOAT, GL_FALSE, s[i] * sizeof(float), (void*)0
+        );
+        glEnableVertexAttribArray(i);
       }
     }
   }
