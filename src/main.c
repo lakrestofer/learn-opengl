@@ -11,6 +11,7 @@
 #include "external/stb_image.h"
 // #include "textures/texture.h"
 #include "models/model.h"
+#include "gl_wrapper.h"
 
 int H    = 480;
 int W    = 640;
@@ -172,12 +173,13 @@ void mouseCallback(GLFWwindow* w, double cx, double cy) {
   glm_vec3_normalize(s->camera.right);
 }
 
+#define N_MODELS 2
+
 int main(void) {
   // setup default state
   GLFWwindow* w = NULL;
   // 3d models
-  Model earth_model = {0};
-  Model sun_model   = {0};
+  Model models[N_MODELS] = {0};
 
   // game state
   GameState state = defaultGameState();
@@ -202,9 +204,8 @@ int main(void) {
   glfwSetCursorPosCallback(w, mouseCallback);
 
   // === load 3d models ===
-  int model_load_error =
-      loadModelFromGltfFile("models/earth.glb", &earth_model) |
-      loadModelFromGltfFile("models/sun.glb", &sun_model);
+  int model_load_error = loadModelFromGltfFile("models/earth.glb", &models[0]) |
+                         loadModelFromGltfFile("models/sun.glb", &models[1]);
   if (model_load_error) goto clean;
 
   // === compile and link shaders ==
@@ -221,6 +222,8 @@ int main(void) {
   if (!shad_ok) goto clean;
 
   // === setup gl objects ===
+  GlObjects wrappers = {0};
+  initObjects(models, &wrappers, N_MODELS);
 
   // == we setup global game state ===
 

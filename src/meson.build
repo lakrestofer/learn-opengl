@@ -5,5 +5,6 @@ sources = files(
   'stb_image.c',
   'init.c',
   'texture.c',
-  'model.c'
+  'model.c',
+  'gl_wrapper.c'
 )

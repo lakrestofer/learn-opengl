@@ -1,2 +1,2 @@
 #!/bin/sh
-CC=clang meson setup builddir
+CC=clang meson setup builddir $*
