@@ -7,31 +7,6 @@
 #include <stdlib.h>
 #include <cglm/cglm.h>
 
-void printGltfInfo(cgltf_data* data) {
-  printf("> stats:\n");
-  printf("> - n scenes: %zu\n", data->scenes_count);
-  printf("> - n nodes: %zu\n", data->nodes_count);
-  printf("> - n meshes : %zu\n", data->meshes_count);
-  printf("> - n materials : %zu\n", data->materials_count);
-  printf("> - n accessors: %zu\n", data->accessors_count);
-  printf("> - n buffer_views: %zu\n", data->buffer_views_count);
-  printf("> - n buffers : %zu\n", data->buffers_count);
-  printf("> - n images : %zu\n", data->images_count);
-  printf("> - n textures: %zu\n", data->textures_count);
-  printf("> - n samplers: %zu\n", data->samplers_count);
-  printf("\n");
-}
-
-void printMesh(Mesh* m) {
-  printf("> - n_vertices: %d\n", m->n_vertices);
-  printf("> - n_triangles: %d\n", m->n_triangles);
-  printf("> - vertices: %s\n", m->vertices ? "populated" : "null");
-  printf("> - normals: %s\n", m->normals ? "populated" : "null");
-  printf("> - tangents: %s\n", m->tangents ? "populated" : "null");
-  printf("> - tex_coords: %s\n", m->tex_coords ? "populated" : "null");
-  printf("> - indices: %s\n", m->indices ? "populated" : "null");
-}
-
 /// helping macro that takes the information provided by the accessor
 /// and copies the data to a destination buffer
 #define LOAD_ATTRIBUTE(accessor, numComp, dataType, dstPtr)                    \
@@ -57,7 +32,6 @@ void printMesh(Mesh* m) {
 
 // NOTE: this function very closely mimics LoadGLTF from raylib
 LoadModelRes loadModelFromGltfFile(const char* path, Model* model) {
-  printf("MODEL: Loading gltf (glb) file: (%s)\n", path);
   // load gltf file
   cgltf_options ops     = {0};
   cgltf_data* gltf_data = NULL;
@@ -70,8 +44,6 @@ LoadModelRes loadModelFromGltfFile(const char* path, Model* model) {
   if (gltf_data->scenes_count != 1 ||
       gltf_data->file_type != cgltf_file_type_glb)
     return ERROR;
-  printf("> successfully loaded gltf data\n");
-  printGltfInfo(gltf_data);
 
   // we want to extract all meshes from the file and transform them
   // into a format that is easier for us to manage.
@@ -201,9 +173,6 @@ LoadModelRes loadModelFromGltfFile(const char* path, Model* model) {
       } else {
         mesh->n_triangles = mesh->n_vertices / 3;
       }
-      printf("> processing primitive %zu, done!\n", pi);
-      printf("> Mesh %zu:\n", pi);
-      printMesh(mesh);
       mesh_index++;
     }
   }

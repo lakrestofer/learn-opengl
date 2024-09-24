@@ -11,17 +11,6 @@
 
 #define PACKED __attribute__((packed))
 
-typedef enum {
-  VERTEX,
-  NORMAL,
-  TANGENT,
-  TEXCOORD,
-  N_BUFFER_TYPES
-} BUFFER_TYPE;
-
-// the number of floats in each buffer type
-static const char COMPONENT_SIZE[N_BUFFER_TYPES] = {3, 3, 4, 2};
-
 typedef struct {
   GLuint vertices;
   GLuint normals;

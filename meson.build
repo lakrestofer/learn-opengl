@@ -1,6 +1,7 @@
 project('learn-opengl', 'c',
   version : '0.1',
   default_options : [
+    'builttype=debug',
     'warning_level=3',
     'c_std=c11'
   ]

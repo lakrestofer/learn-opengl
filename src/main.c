@@ -107,21 +107,33 @@ int main(void) {
     printf("could not load model, exiting\n");
     goto clean;
   }
+  printf("n_meshes: %d\n", model.n_meshes);
+  printf("n_vertices: %d\n", model.meshes[0].n_vertices);
+
+  printf("vertices: [\n");
+  for (int i = 0; i < 200; i++) {
+    printf("   (");
+    for (int j = 0; j < 3; j++) {
+      printf("%f,", model.meshes[0].vertices[i * 3 + j]);
+    }
+    printf("),\n");
+  }
+  printf("...]\n");
 
   // === generate VAOs, VBOs etc... ===
-  GlIdentifier ids = {0};
-  genGlIds(&ids, model.n_meshes);
-  syncBuffers(model.meshes, &ids, model.n_meshes);
+  // GlIdentifier ids = {0};
+  // genGlIds(&ids, model.n_meshes);
+  // syncBuffers(model.meshes, &ids, model.n_meshes);
 
-  // === load textures ===
-  GLuint texture =
-      loadTexture("container2.png", PNG); // TODO load texture form gltf file
-  if (!texture) {
-    printf("could not load texture, exiting\n");
-    goto clean;
-  }
+  // // === load textures ===
+  // GLuint texture =
+  //     loadTexture("container2.png", PNG); // TODO load texture form gltf file
+  // if (!texture) {
+  //   printf("could not load texture, exiting\n");
+  //   goto clean;
+  // }
 
-  // === compile and link shaders ==
+  // === load, compile and link shaders ==
   GLuint shader = loadShader(SUN_VERT_SRC, SUN_FRAG_SRC);
   if (!shader) {
     printf("could not load shader, exiting\n");
@@ -141,6 +153,23 @@ int main(void) {
   // === game state setup begin ===
   GameState state = defaultGameState(W, H);
 
+  unsigned int VBO, VAO;
+  glGenVertexArrays(1, &VAO);
+  glGenBuffers(1, &VBO);
+  glBindVertexArray(VAO);
+
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(
+      GL_ARRAY_BUFFER,
+      model.meshes[0].n_vertices * sizeof(float),
+      model.meshes[0].vertices,
+      GL_STATIC_DRAW
+  );
+
+  // position attribute
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
+
   // === setup before Application loop ===
   glfwSetWindowUserPointer(w, &state);
   // === Application loop ==
@@ -159,14 +188,14 @@ int main(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // draw sun
-    for (int i = 0; i < model.n_meshes; i++) {
-      GLuint vao = ids.vao[i];
-      glBindVertexArray(vao);
-      glUseProgram(shader);
-      glDrawElements(
-          GL_TRIANGLES, model.meshes[i].n_triangles, GL_UNSIGNED_INT, 0
-      );
-    }
+    glBindVertexArray(VAO);
+    glUseProgram(shader);
+
+    glUniformMatrix4fv(vars.model, 1, false, (float*)m);
+    glUniformMatrix4fv(vars.view, 1, false, (float*)v);
+    glUniformMatrix4fv(vars.projection, 1, false, (float*)p);
+
+    glDrawArrays(GL_TRIANGLES, model.meshes[0].n_vertices, GL_UNSIGNED_INT);
 
     // glfw: swap buffers
     glfwSwapBuffers(w); // swap buffer
