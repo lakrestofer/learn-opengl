@@ -1,4 +1,3 @@
-
 #ifndef SHADER_HEADER
 #define SHADER_HEADER
 
@@ -8,13 +7,13 @@
 
 typedef const char* ShaderSrc;
 typedef GLuint Shader;
+typedef struct {
+  GLint model;
+  GLint view;
+  GLint projection;
+} ShaderVars;
 
-#define initVShader(src) initShader(GL_VERTEX_SHADER, src)
-#define initFShader(src) initShader(GL_FRAGMENT_SHADER, src)
-GLuint initShader(GLenum type, const char* shader_src_path);
-bool shaderIsValid(GLuint shader);
-GLuint linkShaders(GLuint v_shader, GLuint f_shader);
-bool shaderProgramIsValid(GLuint program);
-
+GLuint loadShader(const char* v_path, const char* f_path);
+ShaderVars loadShaderVars(GLuint shader);
 
 #endif

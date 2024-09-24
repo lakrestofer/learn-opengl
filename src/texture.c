@@ -2,7 +2,7 @@
 #include "external/stb_image.h"
 #include <stdbool.h>
 
-GLuint createTexture(const char* fileName, ImageType type) {
+GLuint loadTexture(const char* fileName, ImageType type) {
   int iw, ih, nbrChnls;
   if (type == PNG) stbi_set_flip_vertically_on_load(true);
   unsigned char* data = stbi_load(fileName, &iw, &ih, &nbrChnls, 0);

@@ -6,7 +6,7 @@
 #define arrayBufferData(size, ptr)                                             \
   glBufferData(GL_ARRAY_BUFFER, size, ptr, GL_STATIC_DRAW)
 
-void genGlIds(GlIdentifier wrappers, int n) {
+void genGlIds(GlIdentifier* wrappers, int n) {
   // I. We create all VAOs, VBOs, and EBO
   GLuint* VAO     = malloc(n * sizeof(GLuint));
   VBOBuffers* VBO = malloc(n * sizeof(VBOBuffers));
@@ -14,9 +14,9 @@ void genGlIds(GlIdentifier wrappers, int n) {
   glGenVertexArrays(n, VAO);
   glGenBuffers(n * N_BUFFER_TYPES, (GLuint*)VBO);
   glGenBuffers(n, EBO);
-  wrappers.vao = VAO;
-  wrappers.vbo = VBO;
-  wrappers.ebo = EBO;
+  wrappers->vao = VAO;
+  wrappers->vbo = VBO;
+  wrappers->ebo = EBO;
 
   // II. then we bind them to each other
   for (int i = 0; i < n; i++) {

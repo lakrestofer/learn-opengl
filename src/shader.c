@@ -7,7 +7,7 @@ GLuint initShader(GLenum type, const char* shader_src) {
   FILE* f = fopen(shader_src, "r"); // open file
   if (!f) return 0;
   fseek(f, 0, SEEK_END);
-  int length = ftell(f); // find length of file
+  long length = ftell(f); // find length of file
   fseek(f, 0, SEEK_SET);
   char* buffer = malloc(length + 1); // allocate memory for file
   if (!buffer) return 0;
@@ -21,6 +21,7 @@ GLuint initShader(GLenum type, const char* shader_src) {
   free(buffer); // free the buffer
   return obj;
 }
+
 bool shaderIsValid(GLuint shader) {
   if (!shader) return false;
   int success;
@@ -53,4 +54,28 @@ bool shaderProgramIsValid(GLuint program) {
     return false;
   }
   return true;
+}
+
+#define initVShader(src) initShader(GL_VERTEX_SHADER, src)
+#define initFShader(src) initShader(GL_FRAGMENT_SHADER, src)
+GLuint loadShader(const char* v_path, const char* f_path) {
+  GLuint v = initVShader(v_path);
+  GLuint f = initFShader(f_path);
+  if (!v || !f) return 0;
+  bool ok = shaderIsValid(v) && shaderIsValid(f);
+  if (!ok) return 0;
+  GLuint shader = linkShaders(v, f);
+  ok            = shaderProgramIsValid(shader);
+  if (!ok) return 0;
+  return shader;
+}
+
+ShaderVars loadShaderVars(GLuint shader) {
+  ShaderVars v = {0};
+
+  v.model      = glGetUniformLocation(shader, "model");
+  v.view       = glGetUniformLocation(shader, "view");
+  v.projection = glGetUniformLocation(shader, "projection");
+
+  return v;
 }

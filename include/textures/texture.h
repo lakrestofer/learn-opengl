@@ -3,6 +3,6 @@
 #include "glad/gl.h"
 
 typedef enum { PNG, JPG } ImageType;
-GLuint createTexture(const char* fileName, ImageType type);
+GLuint loadTexture(const char* fileName, ImageType type);
 
 #endif

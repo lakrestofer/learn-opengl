@@ -61,16 +61,15 @@ LoadModelRes loadModelFromGltfFile(const char* path, Model* model) {
   // load gltf file
   cgltf_options ops     = {0};
   cgltf_data* gltf_data = NULL;
-  cgltf_result gltf_err = cgltf_parse_file(&ops, path, &gltf_data);
-  if (gltf_err) return ERROR; // could not load gltf data
-  gltf_err = cgltf_validate(gltf_data);
-  if (gltf_err) return ERROR; // data was loaded but not valid!
-  gltf_err = cgltf_load_buffers(&ops, gltf_data, path);
-  if (gltf_err) return ERROR; // could not load data into buffers
+  cgltf_result gltf_err = cgltf_parse_file(&ops, path, &gltf_data) ||
+                          cgltf_validate(gltf_data) ||
+                          cgltf_load_buffers(&ops, gltf_data, path);
+  if (gltf_err) return ERROR;
 
   // check some simple constraints
-  if (gltf_data->scenes_count != 1) return ERROR;
-  if (gltf_data->file_type != cgltf_file_type_glb) return ERROR; // only glb
+  if (gltf_data->scenes_count != 1 ||
+      gltf_data->file_type != cgltf_file_type_glb)
+    return ERROR;
   printf("> successfully loaded gltf data\n");
   printGltfInfo(gltf_data);
 

@@ -9,9 +9,10 @@
 #include "init.h"
 #include "shaders/shader.h"
 #include "external/stb_image.h"
-// #include "textures/texture.h"
+#include "textures/texture.h"
 #include "models/model.h"
 #include "gl_util.h"
+#include "game_state.h"
 
 int H    = 480;
 int W    = 640;
@@ -21,100 +22,6 @@ vec3 UP  = {0, 1, 0};
 // aliases
 #define shaderVar glGetUniformLocation
 
-typedef struct {
-  float yaw;
-  float pitch;
-  vec3 pos;
-  vec3 front;
-  vec3 right;
-} Camera;
-
-Camera defaultCamera(void) {
-  Camera c = {
-      .yaw   = -90.0f,
-      .pitch = 0,
-      .pos   = {0, 0, 3},
-      .front = {0, 0, -1},
-  };
-  glm_cross(UP, c.front, c.right);
-  glm_vec3_normalize(c.right);
-
-  vec3 posFrontSum;
-  glm_vec3_add(c.pos, c.front, posFrontSum);
-  return c;
-}
-// /// generates the 'look at' matrix given current camera state
-void cameraLookAt(Camera* c, mat4 to) {
-  vec3 posFrontSum;
-  glm_vec3_add(c->pos, c->front, posFrontSum);
-  glm_lookat(c->pos, posFrontSum, UP, to);
-}
-
-void moveCameraForward(Camera* c, float speed) {
-  vec3 direction;
-  glm_vec3_scale(c->front, speed, direction);
-  glm_vec3_add(c->pos, direction, c->pos);
-}
-void moveCameraBackward(Camera* c, float speed) {
-  vec3 direction;
-  glm_vec3_scale(c->front, speed, direction);
-  glm_vec3_sub(c->pos, direction, c->pos);
-}
-void moveCameraLeft(Camera* c, float speed) {
-  vec3 direction;
-  glm_vec3_scale(c->right, speed, direction);
-  glm_vec3_add(c->pos, direction, c->pos);
-}
-void moveCameraRight(Camera* c, float speed) {
-  vec3 direction;
-  glm_vec3_scale(c->right, speed, direction);
-  glm_vec3_sub(c->pos, direction, c->pos);
-}
-void moveCameraUp(Camera* c, float speed) { c->pos[1] += speed; }
-void moveCameraDown(Camera* c, float speed) { c->pos[1] -= speed; }
-
-typedef struct {
-  float x;
-  float y;
-} Cursor;
-
-Cursor defaultCursorPos(void) {
-  Cursor p = {.x = W / 2, .y = H / 2};
-  return p;
-}
-
-typedef struct {
-  float delta_time;
-  float last_frame;
-} FrameTime;
-
-FrameTime defaultFrameTime(void) {
-  FrameTime t = {
-      .delta_time = 0.0f, // Time between current frame and last frame
-      .last_frame = 0.0f, // Time of last frame
-  };
-  return t;
-}
-void updateFrameTime(FrameTime* time, float now) {
-  time->delta_time = now - time->last_frame;
-  time->last_frame = now;
-}
-
-typedef struct {
-  Camera camera;
-  Cursor cursor;
-  FrameTime frame_t;
-} GameState;
-
-GameState defaultGameState(void) {
-  GameState state = {
-      .camera  = defaultCamera(),
-      .cursor  = defaultCursorPos(),
-      .frame_t = defaultFrameTime(),
-  };
-  return state;
-}
-
 // === callbacks ===
 
 void onResizeScreen(GLFWwindow* _, int w, int h) {
@@ -123,11 +30,17 @@ void onResizeScreen(GLFWwindow* _, int w, int h) {
   H = h;
 }
 
+typedef struct {
+  GlIdentifier ids;
+  GLuint shader;
+  GLuint texture;
+} RenderModel;
+
 // === application code ===
 
 // shader paths
-const char* SUN_VERT_SRS = "shaders/sun.vert";
-const char* SUN_FRAG_SRS = "shaders/sun.frag";
+const char* SUN_VERT_SRC = "shaders/sun.vert";
+const char* SUN_FRAG_SRC = "shaders/sun.frag";
 
 #define closeWindow() glfwSetWindowShouldClose(w, true);
 #define K(key) GLFW_KEY_##key
@@ -176,26 +89,10 @@ void mouseCallback(GLFWwindow* w, double cx, double cy) {
 #define N_MODELS 2
 
 int main(void) {
-  // setup default state
-  GLFWwindow* w = NULL;
-  // 3d models
-  Model models[N_MODELS] = {0};
-
-  // game state
-  GameState state = defaultGameState();
-  // default model view projection matrices
-  mat4 m = GLM_MAT4_IDENTITY; // cube model
-  mat4 v = GLM_MAT4_IDENTITY; // view
-  mat4 p = GLM_MAT4_IDENTITY; // projection
-
   // === Init glfw and gl context ===
-  w = initAndCreateWindow(W, H, WT);
+  GLFWwindow* w = initAndCreateWindow(W, H, WT);
   if (!w) goto clean;
-
-  // === set glfw settings ===
   glfwSetInputMode(w, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-  // === gl settings ===
   glEnable(GL_DEPTH_TEST);
 
   // === register callbacks ==
@@ -204,53 +101,72 @@ int main(void) {
   glfwSetCursorPosCallback(w, mouseCallback);
 
   // === load 3d models ===
-  int model_load_error = loadModelFromGltfFile("models/earth.glb", &models[0]) |
-                         loadModelFromGltfFile("models/sun.glb", &models[1]);
-  if (model_load_error) goto clean;
+  Model model          = {0};
+  int model_load_error = loadModelFromGltfFile("models/sun.glb", &model);
+  if (model_load_error) {
+    printf("could not load model, exiting\n");
+    goto clean;
+  }
 
-  // === compile and link shaders ==
-  GLuint sun_vert = initVShader(SUN_VERT_SRS);
-  GLuint sun_frag = initVShader(SUN_FRAG_SRS);
-  bool shad_ok    = shaderIsValid(sun_vert) && shaderIsValid(sun_frag);
-  if (!shad_ok) goto clean;
-  GLuint sun_shader = linkShaders(sun_vert, sun_frag);
-  shad_ok           = shaderIsValid(sun_shader);
-  if (!shad_ok) goto clean;
-
-  // locations for uniform vars
+  // === generate VAOs, VBOs etc... ===
+  GlIdentifier ids = {0};
+  genGlIds(&ids, model.n_meshes);
+  syncBuffers(model.meshes, &ids, model.n_meshes);
 
   // === load textures ===
+  GLuint texture =
+      loadTexture("container2.png", PNG); // TODO load texture form gltf file
+  if (!texture) {
+    printf("could not load texture, exiting\n");
+    goto clean;
+  }
 
-  // === setup gl objects ===
-  GlIdentifier ids[N_MODELS] = {0};
-  // generate VAO,VBOs and EBOs for our models
-  // and set attribute pointers
-  genGlIds(&ids[0], models[0].n_meshes);
-  genGlIds(&ids[1], models[1].n_meshes);
-  // sync model data with gpu
-  syncBuffers(models[0].meshes, &ids[0], models[0].n_meshes);
-  syncBuffers(models[1].meshes, &ids[1], models[1].n_meshes);
-
-  // == we setup global game state ===
-
-  // we make game state available from everywhere
-  glfwSetWindowUserPointer(w, &state);
+  // === compile and link shaders ==
+  GLuint shader = loadShader(SUN_VERT_SRC, SUN_FRAG_SRC);
+  if (!shader) {
+    printf("could not load shader, exiting\n");
+    goto clean;
+  }
+  ShaderVars vars = loadShaderVars(shader);
+  if (vars.model == -1 || vars.view == -1 || vars.projection == -1) {
+    printf("could not load uniform variables\n");
+    goto clean;
+  }
 
   // === mvp setup begin ===
+  mat4 m = GLM_MAT4_IDENTITY;
+  mat4 v = GLM_MAT4_IDENTITY;
+  mat4 p = GLM_MAT4_IDENTITY;
 
+  // === game state setup begin ===
+  GameState state = defaultGameState(W, H);
+
+  // === setup before Application loop ===
+  glfwSetWindowUserPointer(w, &state);
   // === Application loop ==
   while (!glfwWindowShouldClose(w)) {
     // === update ===
     float time = glfwGetTime();
     updateFrameTime(&state.frame_t, time); // update frame time
-    cameraLookAt(&state.camera, v);        // set v
 
     handleInput(w, &state); // handle input
+    // update v and p
+    cameraLookAt(&state.camera, v); // set v
     glm_perspective(glm_rad(45.0), (float)W / (float)H, 0.1, 100.0, p);
 
     // === draw ===
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // draw sun
+    for (int i = 0; i < model.n_meshes; i++) {
+      GLuint vao = ids.vao[i];
+      glBindVertexArray(vao);
+      glUseProgram(shader);
+      glDrawElements(
+          GL_TRIANGLES, model.meshes[i].n_triangles, GL_UNSIGNED_INT, 0
+      );
+    }
 
     // glfw: swap buffers
     glfwSwapBuffers(w); // swap buffer
