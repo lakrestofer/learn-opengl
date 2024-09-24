@@ -11,25 +11,36 @@
 
 #define PACKED __attribute__((packed))
 
-/// enum mapping to buffer
+
 typedef enum {
-  VERTICES,
-  NORMALS,
+  VERTEX,
+  NORMAL,
   TANGENT,
   TEXCOORD,
-  BUFFER_CONTENT_MAX
-} BufferContent;
+  N_BUFFER_TYPES
+} BUFFER_TYPE;
+static const char COMPONENT_SIZE[N_BUFFER_TYPES] = {3, 3, 4, 2};
 
-/// a container for the VAO, VBOs, EBOs needed to render a model
+// the number of floats in each buffer type
+static const char BUFFER_TYPE_SIZE[N_BUFFER_TYPES] = {3, 3, 4, 2};
+
 typedef struct {
-  Mesh* mesh;
-  GLuint vao;
-  GLuint ebo;
-  GLuint vbo[BUFFER_CONTENT_MAX];
-} GlMeshWrapper;
+  GLuint vertices;
+  GLuint normals;
+  GLuint tangent;
+  GLuint texcoord;
+} PACKED VBOBuffers;
 
-DEFINE_SLICE_STRUCT(GlMeshWrapper)
+// groupings of identifiers 
+typedef struct {
+  GLuint* vao;
+  GLuint* ebo;
+  VBOBuffers* vbo;
+} GlIdentifier;
 
-void initMeshWrappers(ModelSlice models, GlMeshWrapperSlice wrappers);
+
+void genGlIds(GlIdentifier* ids, int n);
+
+void syncBuffers(Mesh* m, GlIdentifier* ids, int n);
 
 #endif

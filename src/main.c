@@ -222,12 +222,14 @@ int main(void) {
   // === load textures ===
 
   // === setup gl objects ===
-  int n_meshes = 0;
-  for (int i = 0; i < N_MODELS; i++) n_meshes += models[i].n_meshes;
-  GlMeshWrapper* wrappers           = calloc(n_meshes, sizeof(GlMeshWrapper));
-  ModelSlice models_slice           = {models, N_MODELS};
-  GlMeshWrapperSlice wrappers_slice = {wrappers, n_meshes};
-  initMeshWrappers(models_slice, wrappers_slice);
+  GlIdentifier ids[N_MODELS] = {0};
+  // generate VAO,VBOs and EBOs for our models
+  // and set attribute pointers
+  genGlIds(&ids[0], models[0].n_meshes);
+  genGlIds(&ids[1], models[1].n_meshes);
+  // sync model data with gpu
+  syncBuffers(models[0].meshes, &ids[0], models[0].n_meshes);
+  syncBuffers(models[1].meshes, &ids[1], models[1].n_meshes);
 
   // == we setup global game state ===
 
