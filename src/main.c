@@ -76,6 +76,7 @@ void mouseCallback(GLFWwindow* w, double cx, double cy) {
   s->camera.pitch += dy * 0.2f;
   if (s->camera.pitch > 89.0f) s->camera.pitch = 89.0f;
   if (s->camera.pitch < -89.0f) s->camera.pitch = -89.0f;
+  printf("pitch: %f, yaw: %f\n", s->camera.pitch, s->camera.yaw);
   s->camera.front[0] =
       cos(glm_rad(s->camera.yaw)) * cos(glm_rad(s->camera.pitch));
   s->camera.front[1] = sin(glm_rad(s->camera.pitch));
@@ -87,6 +88,26 @@ void mouseCallback(GLFWwindow* w, double cx, double cy) {
 }
 
 #define N_MODELS 2
+
+float vertices[] = {
+    -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f,
+    0.5f,  0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, -0.5f,
+
+    -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,  0.5f,
+    0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, -0.5f, 0.5f,
+
+    -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, -0.5f,
+    -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f,
+
+    0.5f,  0.5f,  0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f, -0.5f,
+    0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,  0.5f,
+
+    -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f,
+    0.5f,  -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f,
+
+    -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,
+    0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f,
+};
 
 int main(void) {
   // === Init glfw and gl context ===
@@ -107,18 +128,6 @@ int main(void) {
     printf("could not load model, exiting\n");
     goto clean;
   }
-  printf("n_meshes: %d\n", model.n_meshes);
-  printf("n_vertices: %d\n", model.meshes[0].n_vertices);
-
-  printf("vertices: [\n");
-  for (int i = 0; i < 200; i++) {
-    printf("   (");
-    for (int j = 0; j < 3; j++) {
-      printf("%f,", model.meshes[0].vertices[i * 3 + j]);
-    }
-    printf("),\n");
-  }
-  printf("...]\n");
 
   // === generate VAOs, VBOs etc... ===
   // GlIdentifier ids = {0};
@@ -153,22 +162,25 @@ int main(void) {
   // === game state setup begin ===
   GameState state = defaultGameState(W, H);
 
-  unsigned int VBO, VAO;
+  unsigned int VBO, VAO, EBO;
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
+  glGenBuffers(1, &EBO);
+
+  // bind object ids
   glBindVertexArray(VAO);
-
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(
-      GL_ARRAY_BUFFER,
-      model.meshes[0].n_vertices * sizeof(float),
-      model.meshes[0].vertices,
-      GL_STATIC_DRAW
-  );
-
-  // position attribute
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
+
+  // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  // glBufferData(
+  //     GL_ARRAY_BUFFER,
+  //     model.meshes[0].n_triangles * 3 * sizeof(float),
+  //     model.meshes[0].indices,
+  //     GL_STATIC_DRAW
+  // );
 
   // === setup before Application loop ===
   glfwSetWindowUserPointer(w, &state);
@@ -195,7 +207,10 @@ int main(void) {
     glUniformMatrix4fv(vars.view, 1, false, (float*)v);
     glUniformMatrix4fv(vars.projection, 1, false, (float*)p);
 
-    glDrawArrays(GL_TRIANGLES, model.meshes[0].n_vertices, GL_UNSIGNED_INT);
+    // glDrawElements(
+    //     GL_TRIANGLES, model.meshes[0].n_triangles * 3, GL_UNSIGNED_INT, 0
+    // );
+    glDrawArrays(GL_TRIANGLES, 0, 36);
 
     // glfw: swap buffers
     glfwSwapBuffers(w); // swap buffer

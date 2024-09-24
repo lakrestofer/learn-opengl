@@ -154,20 +154,18 @@ LoadModelRes loadModelFromGltfFile(const char* path, Model* model) {
       // then we check for and load indices
       if (primitive->indices) {
         printf("> processing primitive %zu, checking if indices exists\n", pi);
-        cgltf_accessor* accessor = primitive->indices;
-        int n_indices            = accessor->count;
-        mesh->n_triangles        = n_indices / 3;
+        cgltf_accessor* accessor  = primitive->indices;
+        cgltf_component_type type = accessor->component_type;
+        int n_indices             = accessor->count;
+        mesh->n_triangles         = n_indices / 3;
 
-        if (accessor->component_type == cgltf_component_type_r_16u) {
-          // we are done
-          mesh->indices = malloc(n_indices * sizeof(unsigned short));
-          LOAD_ATTRIBUTE(accessor, 1, unsigned long, mesh->indices);
-        } else if (accessor->component_type == cgltf_component_type_r_32u) {
-          mesh->indices      = malloc(n_indices * sizeof(unsigned short));
+        mesh->indices = malloc(n_indices * sizeof(unsigned short));
+        if (type == cgltf_component_type_r_16u) {
+          LOAD_ATTRIBUTE(accessor, 1, unsigned short, mesh->indices);
+        } else if (type == cgltf_component_type_r_32u) {
           unsigned int* temp = malloc(n_indices * sizeof(unsigned int));
           LOAD_ATTRIBUTE(accessor, 1, unsigned int, temp);
-          for (int i = 0; i < n_indices; i++)
-            mesh->indices[i] = (unsigned short)temp[i];
+          for (int i = 0; i < n_indices; i++) mesh->indices[i] = temp[i];
           free(temp);
         }
       } else {
