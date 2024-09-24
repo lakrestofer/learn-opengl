@@ -6,5 +6,5 @@ sources = files(
   'init.c',
   'texture.c',
   'model.c',
-  'gl_wrapper.c'
+  'gl_util.c'
 )

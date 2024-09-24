@@ -11,7 +11,7 @@
 #include "external/stb_image.h"
 // #include "textures/texture.h"
 #include "models/model.h"
-#include "gl_wrapper.h"
+#include "gl_util.h"
 
 int H    = 480;
 int W    = 640;
