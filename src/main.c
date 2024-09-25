@@ -122,7 +122,7 @@ int main(void) {
 
   // === load 3d models ===
   Model model          = {0};
-  int model_load_error = loadModelFromGltfFile("models/sun.glb", &model);
+  int model_load_error = loadModelFromGltfFile("models/earth.glb", &model);
   if (model_load_error) {
     printf("could not load model, exiting\n");
     goto clean;
