@@ -76,6 +76,7 @@ ShaderVars loadShaderVars(GLuint shader) {
   v.model      = glGetUniformLocation(shader, "model");
   v.view       = glGetUniformLocation(shader, "view");
   v.projection = glGetUniformLocation(shader, "projection");
+  v.texture_0  = glGetUniformLocation(shader, "texture_0");
 
   return v;
 }

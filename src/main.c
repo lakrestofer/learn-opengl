@@ -8,7 +8,7 @@
 #include "init.h"
 #include "shaders/shader.h"
 #include "external/stb_image.h"
-// #include "textures/texture.h"
+#include "textures/texture.h"
 #include "models/model.h"
 #include "gl_util.h"
 #include "game_state.h"
@@ -128,15 +128,15 @@ int main(void) {
     goto clean;
   }
 
-  printf("n vertices: %d\n", model.meshes[0].n_vertices);
-  printf("n triangles: %d\n", model.meshes[0].n_triangles);
-  for (int i = 0; i < 20; i++) {
-    unsigned int index = model.meshes[0].indices[i];
-    float x            = model.meshes[0].vertices[index * 3 + 0];
-    float y            = model.meshes[0].vertices[index * 3 + 1];
-    float z            = model.meshes[0].vertices[index * 3 + 2];
-    printf("index: %d, vertex: [%f,%f,%f]\n", index, x, y, z);
-  }
+  // printf("n vertices: %d\n", model.meshes[0].n_vertices);
+  // printf("n triangles: %d\n", model.meshes[0].n_triangles);
+  // for (int i = 0; i < 20; i++) {
+  //   unsigned int index = model.meshes[0].indices[i];
+  //   float x            = model.meshes[0].vertices[index * 3 + 0];
+  //   float y            = model.meshes[0].vertices[index * 3 + 1];
+  //   float z            = model.meshes[0].vertices[index * 3 + 2];
+  //   printf("index: %d, vertex: [%f,%f,%f]\n", index, x, y, z);
+  // }
 
   // === generate VAOs, VBOs etc... ===
   // GlIdentifier ids = {0};
@@ -172,9 +172,11 @@ int main(void) {
   GameState state = defaultGameState(W, H);
 
   unsigned int VAO, VBO[N_BUFFER_TYPES], EBO;
+  unsigned int texture;
   glGenVertexArrays(1, &VAO);
   glGenBuffers(N_BUFFER_TYPES, VBO);
   glGenBuffers(1, &EBO);
+  glGenTextures(1, &texture);
 
   // bind object ids
   glBindVertexArray(VAO);
@@ -188,6 +190,16 @@ int main(void) {
   );
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
+  // texcoord
+  glBindBuffer(GL_ARRAY_BUFFER, VBO[TEXCOORD]);
+  glBufferData(
+      GL_ARRAY_BUFFER,
+      model.meshes[0].n_vertices * 2 * sizeof(float),
+      model.meshes[0].tex_coords,
+      GL_STATIC_DRAW
+  );
+  glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(3);
   //indices
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
   glBufferData(
@@ -196,6 +208,26 @@ int main(void) {
       model.meshes[0].indices,
       GL_STATIC_DRAW
   );
+  ImageData* image = &model.materials[0].textures[BASE].image;
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(
+      GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR
+  );
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glBindTexture(GL_TEXTURE_2D, texture);
+  glTexImage2D(
+      GL_TEXTURE_2D,
+      0,
+      GL_RGB,
+      image->w,
+      image->h,
+      0,
+      GL_RGB,
+      GL_UNSIGNED_BYTE,
+      image->data
+  );
+  glGenerateMipmap(GL_TEXTURE_2D);
 
   GLenum err;
   while ((err = glGetError()) != GL_NO_ERROR) {
@@ -204,9 +236,10 @@ int main(void) {
 
   // === setup before Application loop ===
   glfwSetWindowUserPointer(w, &state);
-  glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
   // === Application loop ==
+  // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   while (!glfwWindowShouldClose(w)) {
     // === update ===
     float time = glfwGetTime();
@@ -219,8 +252,6 @@ int main(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glBindVertexArray(VAO);
-    // glBindBuffer(GL_ARRAY_BUFFER, VBO[VERTEX]);
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glUseProgram(shader);
 
     glUniformMatrix4fv(vars.model, 1, false, (float*)m);

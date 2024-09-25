@@ -11,6 +11,7 @@ typedef struct {
   GLint model;
   GLint view;
   GLint projection;
+  GLint texture_0;
 } ShaderVars;
 
 GLuint loadShader(const char* v_path, const char* f_path);

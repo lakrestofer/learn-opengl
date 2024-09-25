@@ -7,6 +7,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cglm/cglm.h>
+#include "external/stb_image.h"
+
+int format_to_gl_const(ImageFormat format) {
+  switch (format) {
+  case GRAY: return GL_LUMINANCE;
+  case GRAY_ALPHA: return GL_LUMINANCE_ALPHA;
+  case RED_GREEN_BLUE: return GL_RGB;
+  case RED_GEEN_BLUE_ALPHA: return GL_RGBA;
+  default: return -1;
+  }
+}
 
 /// helping macro that takes the information provided by the accessor
 /// and copies the data to a destination buffer
@@ -61,6 +72,55 @@ LoadModelRes loadModelFromGltfFile(const char* path, Model* model) {
   }
   printf("> loading n=%d meshes!\n", n_meshes);
 
+  model->n_materials = gltf_data->materials_count;
+  model->materials   = calloc(model->n_materials, sizeof(Material));
+
+  // load materials
+  for (cgltf_size material_index = 0;
+       material_index < gltf_data->materials_count;
+       material_index++) {
+    cgltf_material* m  = &(gltf_data->materials[material_index]);
+    Material* material = &(model->materials[material_index]);
+
+    // we only handle PBR metallic / roughness flow
+    if (m->has_pbr_metallic_roughness) {
+
+      cgltf_pbr_metallic_roughness pbr = m->pbr_metallic_roughness;
+
+      material->textures[BASE] = (Texture){0};
+
+      cgltf_texture* t      = NULL;
+      cgltf_image* i        = NULL;
+      cgltf_buffer_view* bv = NULL;
+      cgltf_buffer* b       = NULL;
+
+      // does this texture contain image data in a buffer?
+      if (!(t = pbr.base_color_texture.texture) || !(i = t->image) ||
+          !(bv = i->buffer_view) || !(b = bv->buffer) || !(b->data)) {
+        continue;
+      }
+
+      // read data from buffer
+      unsigned char* temp = malloc(bv->size);
+      int o               = (int)bv->offset;
+      int s               = (int)bv->stride ? (int)bv->stride : 1;
+      for (unsigned int j = 0; j < bv->size; j++, o += s)
+        temp[j] = ((unsigned char*)b->data)[o];
+
+      // then parse that data
+      ImageData image = {0};
+      int n_channels  = 0;
+      image.data      = stbi_load_from_memory(
+          temp, bv->size, &image.w, &image.h, &n_channels, 0
+      );
+      if (0 <= n_channels && n_channels < N_IMAGE_FORMATS)
+        image.format = n_channels;
+      if (image.data)
+        model->materials[material_index].textures[BASE].image = image;
+    }
+  }
+
+  // load meshes
   model->n_meshes = n_meshes;
   model->meshes   = calloc(n_meshes, sizeof(Mesh));
 

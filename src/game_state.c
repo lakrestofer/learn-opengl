@@ -7,7 +7,7 @@ Camera defaultCamera(void) {
   Camera c = {
       .yaw   = -90.0f,
       .pitch = 0,
-      .pos   = {0, 0, 3},
+      .pos   = {0, 0, 10},
       .front = {0, 0, -1},
   };
   glm_cross(UP, c.front, c.right);
