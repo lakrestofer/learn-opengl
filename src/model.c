@@ -1,6 +1,7 @@
 
 #include <cglm/cglm.h>
 #include <cglm/mat4.h>
+#include <cgltf/cgltf.h>
 #define CGLTF_IMPLEMENTATION
 #include "models/model.h"
 #include <stdio.h>
@@ -80,6 +81,22 @@ LoadModelRes loadModelFromGltfFile(const char* path, Model* model) {
     glm_mat4_inv((vec4*)trans, (vec4*)trans_norm);
     glm_mat4_transpose((vec4*)trans_norm);
 
+    printf("world transform\n");
+    for (int i = 0; i < 4; i++) {
+      printf("[");
+      for (int j = 0; j < 4; j++) printf("%f, ", trans[i * 4 + j]);
+      printf("]\n");
+    }
+    printf("\n");
+
+    printf("world norm transform\n");
+    for (int i = 0; i < 4; i++) {
+      printf("[");
+      for (int j = 0; j < 4; j++) printf("%f, ", trans_norm[i * 4 + j]);
+      printf("]\n");
+    }
+    printf("\n");
+
     // the mesh contains several primitives
     // which defines its vertices, normals, tangents etc.
     // as done in raylib, we will create a Mesh for each such primitive
@@ -115,10 +132,11 @@ LoadModelRes loadModelFromGltfFile(const char* path, Model* model) {
         // we can load the data up front
         // the accessor tells us how to extract the data from
         // the gltf buffers
-        int n_floats      = cgltf_num_components(accessor->type);
-        cgltf_size n_vecs = accessor->count;
-        float* data       = malloc(n_vecs * n_floats * sizeof(float));
-        LOAD_ATTRIBUTE(accessor, n_floats, float, data);
+        // number of bytes per element
+        cgltf_size n_vecs     = accessor->count;
+        cgltf_size floatCount = cgltf_accessor_unpack_floats(accessor, NULL, 0);
+        float* data           = (float*)calloc(floatCount, sizeof(float));
+        cgltf_accessor_unpack_floats(accessor, data, floatCount);
 
         // depending on attribute type, set the correct field
         if (IS_PRIMITIVE(position, vec3, r_32f)) {
@@ -130,7 +148,7 @@ LoadModelRes loadModelFromGltfFile(const char* path, Model* model) {
         } else if (IS_PRIMITIVE(normal, vec3, r_32f)) {
           mesh->normals = data;
           for (cgltf_size i = 0; i < n_vecs; i++) {
-            glm_mat4_mulv3((vec4*)trans, &data[3 * i], 1, &data[3 * i]);
+            glm_mat4_mulv3((vec4*)trans_norm, &data[3 * i], 1, &data[3 * i]);
           }
         } else if (IS_PRIMITIVE(tangent, vec4, r_32f)) {
           mesh->tangents = data;
@@ -155,18 +173,31 @@ LoadModelRes loadModelFromGltfFile(const char* path, Model* model) {
       if (primitive->indices) {
         printf("> processing primitive %zu, checking if indices exists\n", pi);
         cgltf_accessor* accessor  = primitive->indices;
+        cgltf_type accessor_type  = accessor->type;
         cgltf_component_type type = accessor->component_type;
-        int n_indices             = accessor->count;
-        mesh->n_triangles         = n_indices / 3;
 
-        mesh->indices = malloc(n_indices * sizeof(unsigned short));
+        // element size is should be same as component size
+        assert(accessor_type == cgltf_type_scalar);
+
+        cgltf_size n_elements = accessor->count;
+        cgltf_size size       = cgltf_component_size(type);
+        cgltf_size count =
+            cgltf_accessor_unpack_indices(accessor, NULL, size, 0);
+        assert(n_elements == count);
+        void* buffer = calloc(count, size);
+        cgltf_accessor_unpack_indices(accessor, buffer, size, count);
+
+        mesh->n_triangles = n_elements / 3;
+
+        // number of components
         if (type == cgltf_component_type_r_16u) {
-          LOAD_ATTRIBUTE(accessor, 1, unsigned short, mesh->indices);
+          unsigned int* tmp = calloc(count, sizeof(unsigned int));
+          for (cgltf_size i = 0; i < n_elements; i++)
+            tmp[i] = ((unsigned short*)buffer)[i];
+          free(buffer);
+          mesh->indices = tmp;
         } else if (type == cgltf_component_type_r_32u) {
-          unsigned int* temp = malloc(n_indices * sizeof(unsigned int));
-          LOAD_ATTRIBUTE(accessor, 1, unsigned int, temp);
-          for (int i = 0; i < n_indices; i++) mesh->indices[i] = temp[i];
-          free(temp);
+          mesh->indices = buffer;
         }
       } else {
         mesh->n_triangles = mesh->n_vertices / 3;

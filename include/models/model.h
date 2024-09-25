@@ -12,7 +12,7 @@ typedef struct {
   float* normals;
   float* tangents;
   float* tex_coords;
-  unsigned short* indices;
+  unsigned int* indices;
 } Mesh;
 
 typedef struct {

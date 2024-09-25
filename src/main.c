@@ -3,13 +3,12 @@
 #include "GLFW/glfw3.h"
 #include <cglm/cglm.h>
 #include <stdbool.h>
-#include <stdlib.h>
 #include <sys/stat.h>
 // local dependencies
 #include "init.h"
 #include "shaders/shader.h"
 #include "external/stb_image.h"
-#include "textures/texture.h"
+// #include "textures/texture.h"
 #include "models/model.h"
 #include "gl_util.h"
 #include "game_state.h"
@@ -76,7 +75,7 @@ void mouseCallback(GLFWwindow* w, double cx, double cy) {
   s->camera.pitch += dy * 0.2f;
   if (s->camera.pitch > 89.0f) s->camera.pitch = 89.0f;
   if (s->camera.pitch < -89.0f) s->camera.pitch = -89.0f;
-  printf("pitch: %f, yaw: %f\n", s->camera.pitch, s->camera.yaw);
+  // printf("pitch: %f, yaw: %f\n", s->camera.pitch, s->camera.yaw);
   s->camera.front[0] =
       cos(glm_rad(s->camera.yaw)) * cos(glm_rad(s->camera.pitch));
   s->camera.front[1] = sin(glm_rad(s->camera.pitch));
@@ -129,6 +128,16 @@ int main(void) {
     goto clean;
   }
 
+  printf("n vertices: %d\n", model.meshes[0].n_vertices);
+  printf("n triangles: %d\n", model.meshes[0].n_triangles);
+  for (int i = 0; i < 20; i++) {
+    unsigned int index = model.meshes[0].indices[i];
+    float x            = model.meshes[0].vertices[index * 3 + 0];
+    float y            = model.meshes[0].vertices[index * 3 + 1];
+    float z            = model.meshes[0].vertices[index * 3 + 2];
+    printf("index: %d, vertex: [%f,%f,%f]\n", index, x, y, z);
+  }
+
   // === generate VAOs, VBOs etc... ===
   // GlIdentifier ids = {0};
   // genGlIds(&ids, model.n_meshes);
@@ -162,62 +171,71 @@ int main(void) {
   // === game state setup begin ===
   GameState state = defaultGameState(W, H);
 
-  unsigned int VBO, VAO, EBO;
+  unsigned int VAO, VBO[N_BUFFER_TYPES], EBO;
   glGenVertexArrays(1, &VAO);
-  glGenBuffers(1, &VBO);
+  glGenBuffers(N_BUFFER_TYPES, VBO);
   glGenBuffers(1, &EBO);
 
   // bind object ids
   glBindVertexArray(VAO);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  // vertex
+  glBindBuffer(GL_ARRAY_BUFFER, VBO[VERTEX]);
+  glBufferData(
+      GL_ARRAY_BUFFER,
+      model.meshes[0].n_vertices * 3 * sizeof(float),
+      model.meshes[0].vertices,
+      GL_STATIC_DRAW
+  );
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
+  //indices
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(
+      GL_ELEMENT_ARRAY_BUFFER,
+      model.meshes[0].n_triangles * 3 * sizeof(unsigned int),
+      model.meshes[0].indices,
+      GL_STATIC_DRAW
+  );
 
-  // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  // glBufferData(
-  //     GL_ARRAY_BUFFER,
-  //     model.meshes[0].n_triangles * 3 * sizeof(float),
-  //     model.meshes[0].indices,
-  //     GL_STATIC_DRAW
-  // );
+  GLenum err;
+  while ((err = glGetError()) != GL_NO_ERROR) {
+    printf("OpenGL error: %d\n", err);
+  }
 
   // === setup before Application loop ===
   glfwSetWindowUserPointer(w, &state);
+  glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+
   // === Application loop ==
   while (!glfwWindowShouldClose(w)) {
     // === update ===
     float time = glfwGetTime();
     updateFrameTime(&state.frame_t, time); // update frame time
-
-    handleInput(w, &state); // handle input
-    // update v and p
-    cameraLookAt(&state.camera, v); // set v
+    handleInput(w, &state);                // handle input
+    cameraLookAt(&state.camera, v);        // update v
     glm_perspective(glm_rad(45.0), (float)W / (float)H, 0.1, 100.0, p);
 
     // === draw ===
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // draw sun
     glBindVertexArray(VAO);
+    // glBindBuffer(GL_ARRAY_BUFFER, VBO[VERTEX]);
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glUseProgram(shader);
 
     glUniformMatrix4fv(vars.model, 1, false, (float*)m);
     glUniformMatrix4fv(vars.view, 1, false, (float*)v);
     glUniformMatrix4fv(vars.projection, 1, false, (float*)p);
-
-    // glDrawElements(
-    //     GL_TRIANGLES, model.meshes[0].n_triangles * 3, GL_UNSIGNED_INT, 0
-    // );
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDrawElements(
+        GL_TRIANGLES, model.meshes[0].n_triangles * 3, GL_UNSIGNED_INT, 0
+    );
 
     // glfw: swap buffers
     glfwSwapBuffers(w); // swap buffer
     glfwPollEvents();   // poll for more events
   }
 
-  // === Cleanup ===
+// === Cleanup ===
 clean:
   glfwTerminate();
   if (!w) return -1; // glfw could not init window
