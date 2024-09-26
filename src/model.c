@@ -11,8 +11,8 @@
 
 int format_to_gl_const(ImageFormat format) {
   switch (format) {
-  case GRAY: return GL_LUMINANCE;
-  case GRAY_ALPHA: return GL_LUMINANCE_ALPHA;
+  case GRAY: return GL_RGB;
+  case GRAY_ALPHA: return GL_RGB;
   case RED_GREEN_BLUE: return GL_RGB;
   case RED_GEEN_BLUE_ALPHA: return GL_RGBA;
   default: return -1;
