@@ -5,18 +5,31 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 // local dependencies
-#include "init.h"
 #include "shaders/shader.h"
 #include "external/stb_image.h"
 #include "textures/texture.h"
 #include "models/model.h"
 #include "gl_util.h"
 #include "game_state.h"
+#define NK_INCLUDE_FIXED_TYPES
+#define NK_INCLUDE_STANDARD_IO
+#define NK_INCLUDE_STANDARD_VARARGS
+#define NK_INCLUDE_DEFAULT_ALLOCATOR
+#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
+#define NK_INCLUDE_FONT_BAKING
+#define NK_INCLUDE_DEFAULT_FONT
+#define NK_IMPLEMENTATION
+#define NK_GLFW_GL4_IMPLEMENTATION
+#define NK_KEYSTATE_BASED_INPUT
+#include "nuklear/nuklear.h"
+#include "nuklear/nuklear_glfw_gl4.h"
 
 int H    = 480;
 int W    = 640;
 char* WT = "Hello World";
 vec3 UP  = {0, 1, 0};
+#define MAX_VERTEX_BUFFER 512 * 1024
+#define MAX_ELEMENT_BUFFER 128 * 1024
 
 // aliases
 #define shaderVar glGetUniformLocation
@@ -110,8 +123,17 @@ float vertices[] = {
 
 int main(void) {
   // === Init glfw and gl context ===
-  GLFWwindow* w = initAndCreateWindow(W, H, WT);
+  GLFWwindow* w = NULL;
+  if (!glfwInit()) goto clean;
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  w = glfwCreateWindow(W, H, WT, NULL, NULL);
   if (!w) goto clean;
+  glfwMakeContextCurrent(w);
+  int version = gladLoadGL(glfwGetProcAddress);
+  if (version == 0) goto clean;
+  glViewport(0, 0, W, H);
   glfwSetInputMode(w, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   glEnable(GL_DEPTH_TEST);
 
@@ -119,6 +141,16 @@ int main(void) {
   // register callback to run  when screen resizes
   glfwSetFramebufferSizeCallback(w, onResizeScreen);
   glfwSetCursorPosCallback(w, mouseCallback);
+  glfwGetWindowSize(w, &W, &H);
+
+  struct nk_context* ctx = nk_glfw3_init(
+      w, NK_GLFW3_INSTALL_CALLBACKS, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER
+  );
+  {
+    struct nk_font_atlas* atlas;
+    nk_glfw3_font_stash_begin(&atlas);
+    nk_glfw3_font_stash_end();
+  }
 
   // === load 3d models ===
   Model model          = {0};
@@ -248,6 +280,18 @@ int main(void) {
     cameraLookAt(&state.camera, v);        // update v
     glm_perspective(glm_rad(45.0), (float)W / (float)H, 0.1, 100.0, p);
 
+    nk_glfw3_new_frame();
+    if (nk_begin(
+            ctx,
+            "Nuklear Window",
+            nk_rect(0, 0, 500, 500),
+            NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MINIMIZABLE |
+                NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE
+        )) {
+
+      nk_end(ctx);
+    }
+
     // === draw ===
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -260,6 +304,8 @@ int main(void) {
     glDrawElements(
         GL_TRIANGLES, model.meshes[0].n_triangles * 3, GL_UNSIGNED_INT, 0
     );
+
+    nk_glfw3_render(NK_ANTI_ALIASING_ON);
 
     // glfw: swap buffers
     glfwSwapBuffers(w); // swap buffer
